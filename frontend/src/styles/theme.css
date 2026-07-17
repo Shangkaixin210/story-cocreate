@@ -1,0 +1,45 @@
+:root {
+  /* 儿童友好的暖色调 */
+  --color-primary: #FF8C42;
+  --color-primary-light: #FFB380;
+  --color-primary-dark: #E07030;
+  --color-secondary: #6BCB77;
+  --color-secondary-light: #8ED99A;
+  --color-accent: #FFD93D;
+  --color-accent-light: #FFE680;
+  --color-bg: #FFF8F0;
+  --color-bg-card: #FFFFFF;
+  --color-text: #4A3728;
+  --color-text-light: #8B7355;
+  --color-bubble-ai: #FFF0E0;
+  --color-bubble-child: #E0F0FF;
+  --color-danger: #FF6B6B;
+  --color-white: #FFFFFF;
+
+  /* 字体 */
+  --font-family: 'ZCOOL KuaiLe', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-size-xs: 0.875rem;
+  --font-size-sm: 1rem;
+  --font-size-body: 1.25rem;
+  --font-size-md: 1.5rem;
+  --font-size-lg: 2rem;
+  --font-size-xl: 2.5rem;
+  --font-size-xxl: 3rem;
+
+  /* 圆角 */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-card: 24px;
+  --radius-bubble: 20px;
+  --radius-button: 48px;
+  --radius-round: 50%;
+
+  /* 阴影 */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+
+  /* 动画 */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+}

@@ -1,0 +1,45 @@
+.story-reader {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.reader-message {
+  display: flex;
+  gap: 12px;
+}
+
+.reader-role-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-round);
+  background: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.reader-content {
+  flex: 1;
+  padding: 14px 18px;
+  border-radius: var(--radius-bubble);
+  line-height: 1.8;
+  font-size: var(--font-size-body);
+}
+
+.reader-message-ai .reader-content {
+  background: var(--color-bubble-ai);
+}
+
+.reader-message-child .reader-content {
+  background: var(--color-bubble-child);
+}
+
+.reader-error {
+  text-align: center;
+  color: var(--color-danger);
+  padding: 24px;
+}

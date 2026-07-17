@@ -1,0 +1,51 @@
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--color-white);
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  font-size: 28px;
+}
+
+.logo-text {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-greeting {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+}
+
+.header-logout {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+  background: #F5F0E8;
+  padding: 6px 16px;
+  border-radius: var(--radius-button);
+}
+
+.header-logout:hover {
+  background: #E8DDD0;
+  color: var(--color-text);
+}

@@ -1,0 +1,207 @@
+import { createContext, useContext, useReducer, type ReactNode, type Dispatch } from 'react';
+
+// ── Types ──
+
+export interface ChatMessage {
+  id: string;
+  role: 'ai' | 'child';
+  content: string;
+  isStreaming?: boolean;
+  isQuestion?: boolean;
+  imageUrl?: string;
+  isEnding?: boolean;
+}
+
+export interface SafetyNotice {
+  message: string;
+  level: string;
+}
+
+export interface TurnState {
+  storyId: number | null;
+  messages: ChatMessage[];
+  turnNumber: number;
+  isStreaming: boolean;
+  isEnding: boolean;
+  safetyNotice: SafetyNotice | null;
+}
+
+// ── Actions ──
+
+type TurnAction =
+  | { type: 'START_STORY'; storyId: number }
+  | { type: 'ADD_CHILD_MESSAGE'; content: string }
+  | { type: 'START_AI_STREAMING' }
+  | { type: 'APPEND_NARRATIVE_CHUNK'; text: string; imageUrl?: string }
+  | { type: 'APPEND_ENDING'; text: string; imageUrl?: string }
+  | { type: 'SET_AI_QUESTION'; text: string }
+  | { type: 'FINISH_TURN'; turnNumber: number; isEnding: boolean }
+  | { type: 'RESTORE_MESSAGES'; messages: ChatMessage[]; turnNumber: number }
+  | { type: 'SHOW_SAFETY_NOTICE'; message: string; level: string }
+  | { type: 'DISMISS_SAFETY_NOTICE' }
+  | { type: 'RESET' };
+
+// ── Reducer ──
+
+function turnReducer(state: TurnState, action: TurnAction): TurnState {
+  switch (action.type) {
+    case 'START_STORY':
+      return {
+        storyId: action.storyId,
+        messages: [],
+        turnNumber: 0,
+        isStreaming: false,
+        isEnding: false,
+        safetyNotice: null,
+      };
+
+    case 'ADD_CHILD_MESSAGE': {
+      // Generate illustration for child's story contribution
+      let childImageUrl = '';
+      if (action.content && action.content.length > 10) {
+        const prompt = encodeURIComponent(action.content.slice(0, 200));
+        childImageUrl = `https://image.pollinations.ai/prompt/${prompt}?width=512&height=512&nologo=true`;
+      }
+      const childMsg: ChatMessage = {
+        id: `child-${Date.now()}`,
+        role: 'child',
+        content: action.content,
+        imageUrl: childImageUrl || undefined,
+      };
+      return { ...state, messages: [...state.messages, childMsg] };
+    }
+
+    case 'START_AI_STREAMING': {
+      const aiMsg: ChatMessage = {
+        id: `ai-${Date.now()}`,
+        role: 'ai',
+        content: '',
+        isStreaming: true,
+      };
+      return { ...state, messages: [...state.messages, aiMsg], isStreaming: true };
+    }
+
+    case 'APPEND_NARRATIVE_CHUNK': {
+      const msgs = [...state.messages];
+      const last = msgs[msgs.length - 1];
+      if (last && last.role === 'ai' && last.isStreaming) {
+        msgs[msgs.length - 1] = {
+          ...last,
+          content: last.content + (action.text || ''),
+          // Keep the first image_url if multiple chunks have them
+          imageUrl: last.imageUrl || action.imageUrl,
+        };
+      }
+      return { ...state, messages: msgs };
+    }
+
+    case 'APPEND_ENDING': {
+      const msgs = [...state.messages];
+      const last = msgs[msgs.length - 1];
+      if (last && last.role === 'ai') {
+        msgs[msgs.length - 1] = {
+          ...last,
+          content: last.content + (action.text || ''),
+          isStreaming: false,
+          isEnding: true,
+        };
+      }
+      // Add ending as highlight message
+      const endMsg: ChatMessage = {
+        id: `ai-ending-${Date.now()}`,
+        role: 'ai',
+        content: action.text || '',
+        isEnding: true,
+        imageUrl: action.imageUrl,
+      };
+      return { ...state, messages: [...msgs, endMsg], isStreaming: false };
+    }
+
+    case 'SET_AI_QUESTION': {
+      const msgs = [...state.messages];
+      const lastIdx = msgs.length - 1;
+      if (lastIdx >= 0 && msgs[lastIdx].role === 'ai') {
+        msgs[lastIdx] = { ...msgs[lastIdx], isStreaming: false };
+      }
+      // Add question as a separate highlighted message
+      const qMsg: ChatMessage = {
+        id: `ai-q-${Date.now()}`,
+        role: 'ai',
+        content: action.text,
+        isQuestion: true,
+      };
+      return { ...state, messages: [...msgs, qMsg] };
+    }
+
+    case 'FINISH_TURN':
+      return {
+        ...state,
+        isStreaming: false,
+        turnNumber: action.turnNumber,
+        isEnding: action.isEnding,
+      };
+
+    case 'SHOW_SAFETY_NOTICE':
+      return {
+        ...state,
+        safetyNotice: { message: action.message, level: action.level },
+      };
+
+    case 'DISMISS_SAFETY_NOTICE':
+      return {
+        ...state,
+        safetyNotice: null,
+      };
+
+    case 'RESTORE_MESSAGES':
+      return {
+        ...state,
+        messages: action.messages,
+        turnNumber: action.turnNumber,
+      };
+
+    case 'RESET':
+      return {
+        storyId: null,
+        messages: [],
+        turnNumber: 0,
+        isStreaming: false,
+        isEnding: false,
+        safetyNotice: null,
+      };
+
+    default:
+      return state;
+  }
+}
+
+// ── Context ──
+
+const StoryContext = createContext<{
+  state: TurnState;
+  dispatch: Dispatch<TurnAction>;
+}>({
+  state: { storyId: null, messages: [], turnNumber: 0, isStreaming: false, isEnding: false, safetyNotice: null },
+  dispatch: () => {},
+});
+
+export function StoryProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(turnReducer, {
+    storyId: null,
+    messages: [],
+    turnNumber: 0,
+    isStreaming: false,
+    isEnding: false,
+    safetyNotice: null,
+  });
+
+  return (
+    <StoryContext.Provider value={{ state, dispatch }}>
+      {children}
+    </StoryContext.Provider>
+  );
+}
+
+export function useStoryState() {
+  return useContext(StoryContext);
+}

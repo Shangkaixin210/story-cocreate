@@ -1,0 +1,241 @@
+.talent-page {
+  padding-top: 24px;
+  padding-bottom: 48px;
+}
+
+.talent-error {
+  text-align: center;
+  color: var(--color-danger);
+  padding: 48px 24px;
+}
+
+/* Hero */
+.talent-hero {
+  text-align: center;
+  padding: 32px 24px;
+  background: linear-gradient(135deg, #FFF8F0, #FFE8D6, #FFF0E0);
+  border-radius: var(--radius-card);
+  margin-bottom: 24px;
+}
+
+.talent-hero-emoji {
+  font-size: 64px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.talent-hero-level {
+  font-size: var(--font-size-xl);
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+
+.talent-hero-desc {
+  font-size: var(--font-size-body);
+  color: var(--color-text-light);
+  max-width: 500px;
+  margin: 0 auto 8px;
+  line-height: 1.6;
+}
+
+.talent-hero-story {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+  opacity: 0.7;
+}
+
+/* Score bars */
+.talent-scores {
+  background: var(--color-white);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.talent-scores h2 {
+  font-size: var(--font-size-md);
+  margin-bottom: 16px;
+}
+
+.talent-score-item {
+  margin-bottom: 16px;
+}
+
+.talent-score-item:last-child { margin-bottom: 0; }
+
+.talent-score-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.talent-score-label {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.talent-score-value {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-left: auto;
+}
+
+.talent-score-trend {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+  min-width: 80px;
+  text-align: right;
+}
+
+.talent-score-bar-track {
+  height: 10px;
+  background: #F0E8DC;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.talent-score-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 1s ease;
+}
+
+.talent-score-bar-high { background: linear-gradient(90deg, #6BCB77, #4CAF50); }
+.talent-score-bar-mid { background: linear-gradient(90deg, #FFD93D, #FFC107); }
+.talent-score-bar-low { background: linear-gradient(90deg, #FF8C42, #FF6B6B); }
+
+/* Stats */
+.talent-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.talent-stat-card {
+  background: var(--color-white);
+  border-radius: var(--radius-card);
+  padding: 20px 16px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.talent-stat-num {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-primary);
+  display: block;
+}
+
+.talent-stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+  margin-top: 4px;
+}
+
+/* Creativity flags */
+.talent-flags {
+  background: var(--color-white);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.talent-flags h2 {
+  font-size: var(--font-size-md);
+  margin-bottom: 12px;
+}
+
+.talent-flags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.talent-flag-tag {
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #FFF0E0, #FFE0C0);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-button);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+/* Highlights */
+.talent-highlights {
+  background: var(--color-white);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.talent-highlights h2 {
+  font-size: var(--font-size-md);
+  margin-bottom: 12px;
+}
+
+.talent-highlight-item {
+  padding: 10px 16px;
+  background: #FAF6F0;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  line-height: 1.6;
+  font-style: italic;
+}
+
+.vocab-highlight {
+  background: #FFF8E0;
+  border-left: 4px solid var(--color-accent);
+  font-style: normal;
+}
+
+/* Feedback */
+.talent-feedback {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.talent-feedback-card {
+  background: var(--color-white);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.talent-feedback-card h2 {
+  font-size: var(--font-size-md);
+  margin-bottom: 12px;
+}
+
+.talent-feedback-card li {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  margin-bottom: 8px;
+  line-height: 1.6;
+  list-style-position: inside;
+}
+
+.strengths li::marker { content: '✅ '; }
+.suggestions li::marker { content: '💡 '; }
+
+.talent-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .talent-stats { grid-template-columns: 1fr; }
+  .talent-feedback { grid-template-columns: 1fr; }
+}

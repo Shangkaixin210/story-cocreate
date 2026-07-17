@@ -1,0 +1,28 @@
+.bg-decorations {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.bg-star {
+  position: absolute;
+  font-size: 24px;
+  opacity: 0.3;
+}
+
+.bg-star-1 { top: 10%; left: 5%; animation: float 4s ease-in-out infinite; }
+.bg-star-2 { top: 15%; right: 8%; animation: float 3.5s ease-in-out 0.5s infinite; }
+.bg-star-3 { top: 60%; left: 3%; animation: float 5s ease-in-out 1s infinite; }
+.bg-star-4 { top: 70%; right: 5%; animation: float 4.5s ease-in-out 1.5s infinite; }
+.bg-star-5 { bottom: 15%; left: 50%; animation: float 6s ease-in-out 0.8s infinite; }
+
+.bg-cloud {
+  position: absolute;
+  font-size: 40px;
+  opacity: 0.15;
+}
+
+.bg-cloud-1 { top: 5%; left: 40%; animation: float 8s ease-in-out infinite; }
+.bg-cloud-2 { bottom: 10%; right: 20%; animation: float 7s ease-in-out 2s infinite; }

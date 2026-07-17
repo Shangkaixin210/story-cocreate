@@ -1,0 +1,73 @@
+.character-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--color-white);
+  border: 3px solid transparent;
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.character-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.character-card-selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(255, 140, 66, 0.15);
+}
+
+.character-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-round);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.character-emoji {
+  font-size: 36px;
+}
+
+.character-info {
+  flex: 1;
+}
+
+.character-nickname {
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.character-type {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+}
+
+.character-delete {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-round);
+  background: transparent;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.character-card:hover .character-delete {
+  opacity: 1;
+}
+
+.character-delete:hover {
+  background: #FFE0E0;
+}

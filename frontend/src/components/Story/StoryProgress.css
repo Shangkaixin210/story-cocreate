@@ -1,0 +1,37 @@
+.story-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--color-white);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.progress-bar-track {
+  flex: 1;
+  height: 12px;
+  background: #F0E8DC;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+.progress-bar-ending {
+  background: linear-gradient(90deg, var(--color-accent), #FF6B6B);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.progress-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+  white-space: nowrap;
+  min-width: 100px;
+  text-align: right;
+}
