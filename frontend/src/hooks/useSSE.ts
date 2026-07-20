@@ -5,13 +5,16 @@ import { useStoryState } from '../contexts/StoryContext';
 const MAX_RETRIES = 2;
 
 export function useSSE() {
-  const { dispatch } = useStoryState();
+  const { dispatch, state } = useStoryState();
   const abortRef = useRef<AbortController | null>(null);
   const retryCountRef = useRef<Record<number, number>>({});
 
+  const skipQuestionRef = useRef(false);  // Set true when writing ending
+
   const startTurn = useCallback(
-    async (storyId: number, childInput: string): Promise<void> => {
+    async (storyId: number, childInput: string, skipQuestion: boolean = false): Promise<void> => {
       const isKickoff = childInput === '';
+      skipQuestionRef.current = skipQuestion;
 
       // Don't add child message for kickoff (AI initiates)
       if (!isKickoff) {
@@ -125,6 +128,7 @@ export function useSSE() {
         break;
 
       case 'question':
+        if (skipQuestionRef.current) break;  // Skip question when writing ending
         dispatch({ type: 'SET_AI_QUESTION', text: data.text as string });
         break;
 
@@ -139,11 +143,21 @@ export function useSSE() {
         break;
 
       case 'done':
-        dispatch({
-          type: 'FINISH_TURN',
-          turnNumber: data.turn_number as number,
-          isEnding: (data.is_ending as boolean) || false,
-        });
+        // If writing ending, auto-complete regardless of server response
+        if (skipQuestionRef.current) {
+          skipQuestionRef.current = false;
+          dispatch({
+            type: 'FINISH_TURN',
+            turnNumber: data.turn_number as number,
+            isEnding: true,
+          });
+        } else {
+          dispatch({
+            type: 'FINISH_TURN',
+            turnNumber: data.turn_number as number,
+            isEnding: (data.is_ending as boolean) || false,
+          });
+        }
         break;
 
       case 'error':

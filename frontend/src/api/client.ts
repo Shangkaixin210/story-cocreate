@@ -1,4 +1,6 @@
-const BASE_URL = '/api/v1';
+// Dev: Vite proxy handles /api → localhost:8000
+// Prod: set VITE_API_URL to your backend URL, e.g. https://your-backend.onrender.com
+const BASE_URL = (import.meta.env.VITE_API_URL || '') + '/api/v1';
 
 function getToken(): string | null {
   return localStorage.getItem('auth_token');

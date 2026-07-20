@@ -8,7 +8,7 @@ const COLORS = ['#FF6B6B', '#FF8C42', '#FFD93D', '#6BCB77', '#4D96FF', '#9B59B6'
 const CUSTOM_AVATAR_KEY = '__custom__';
 
 interface CharacterCreatorProps {
-  onCreate: (data: { nickname: string; avatar_type: string; avatar_color: string; personality?: string }) => Promise<void>;
+  onCreate: (data: { nickname: string; avatar_type: string; avatar_color: string; personality?: string; age_group?: string }) => Promise<void>;
 }
 
 export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
@@ -18,6 +18,7 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
   const [isCustomAvatar, setIsCustomAvatar] = useState(false);
   const [avatarColor, setAvatarColor] = useState(COLORS[0]);
   const [personality, setPersonality] = useState('');
+  const [ageGroup, setAgeGroup] = useState('8-12');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -53,6 +54,7 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
         avatar_type: getEffectiveAvatarType(),
         avatar_color: avatarColor,
         personality: personality.trim() || undefined,
+        age_group: ageGroup,
       });
       setNickname('');
     } catch (err: unknown) {
@@ -65,6 +67,13 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
   return (
     <form className="character-creator" onSubmit={handleSubmit}>
       <h3 className="creator-title">创建一个新角色 🎨</h3>
+
+      {/* Age group — compact toggle */}
+      <div className="channel-toggle">
+        <span className="channel-toggle-label">🎯</span>
+        <button type="button" className={`channel-toggle-btn ${ageGroup === '4-7' ? 'channel-toggle-young' : ''}`} onClick={() => setAgeGroup('4-7')}>🧒 4-7岁</button>
+        <button type="button" className={`channel-toggle-btn ${ageGroup === '8-12' ? 'channel-toggle-older' : ''}`} onClick={() => setAgeGroup('8-12')}>🧑 8-12岁</button>
+      </div>
 
       <div className="creator-field">
         <label>角色昵称</label>
@@ -140,6 +149,7 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
           maxLength={100}
         />
       </div>
+
 
       {/* Preview */}
       <div className="creator-preview" style={{ borderColor: avatarColor }}>

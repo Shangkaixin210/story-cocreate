@@ -6,6 +6,7 @@ from pydantic import BaseModel, field_validator
 class StoryCreate(BaseModel):
     character_id: int
     theme: str | None = None
+    title: str | None = None
 
 
 class StoryUpdate(BaseModel):

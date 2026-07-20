@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSSE } from '../hooks/useSSE';
 import { useStoryState, type ChatMessage } from '../contexts/StoryContext';
@@ -41,6 +41,7 @@ export default function StoryPlayPage() {
         isQuestion: false,
       }));
       dispatch({ type: 'RESTORE_MESSAGES', messages: chatMessages, turnNumber: story.turn_count });
+      setStoryTitleState(story.title || '');
 
       // Auto-trigger first turn: if story has 0 turns, AI kicks off the story
       if (story.turn_count === 0 && !storyStartedRef.current) {
@@ -76,10 +77,26 @@ export default function StoryPlayPage() {
     }
   }
 
-  async function handleEndStory() {
+  const [showEndModal, setShowEndModal] = useState(false);
+  const [childEnding, setChildEnding] = useState('');
+  const [storyTitle, setStoryTitleState] = useState('');
+
+  async function handleAIEnding() {
     if (!id) return;
+    setShowEndModal(false);
+    // Mark completed immediately + let AI write ending (skip questions)
     await updateStory(id, { status: 'completed' });
-    dispatch({ type: 'FINISH_TURN', turnNumber: state.turnNumber, isEnding: true });
+    await startTurn(id, '请从刚才的情节继续，给这个故事写一个完整的大结局吧！', true);
+  }
+
+  async function handleChildEnding() {
+    if (!id || !childEnding.trim()) return;
+    // Send child's ending as final message, then mark complete
+    dispatch({ type: 'ADD_CHILD_MESSAGE', content: childEnding.trim() });
+    await updateStory(id, { status: 'completed' });
+    dispatch({ type: 'FINISH_TURN', turnNumber: state.turnNumber + 1, isEnding: true });
+    setShowEndModal(false);
+    setChildEnding('');
   }
 
   if (state.storyId === null && state.messages.length === 0 && loadingRef.current === false) {
@@ -93,12 +110,18 @@ export default function StoryPlayPage() {
 
   return (
     <div className="story-play-page">
-      {/* Progress bar */}
+      {/* Top bar */}
       <div className="story-play-top">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/characters')}>
-          ← 返回
-        </Button>
-        <StoryProgress turn={state.turnNumber} maxTurns={10} isEnding={state.isEnding} />
+        <Button variant="ghost" size="sm" onClick={() => navigate('/characters')}>← 返回</Button>
+        <input
+          className="story-title-inline"
+          value={storyTitle}
+          onChange={(e) => setStoryTitleState(e.target.value)}
+          onBlur={async () => { if (id && storyTitle.trim()) await updateStory(id, { title: storyTitle.trim() }); }}
+          placeholder="未命名故事"
+          maxLength={30}
+        />
+        <StoryProgress turn={state.turnNumber} maxTurns={15} isEnding={state.isEnding} />
       </div>
 
       {/* Safety notice banner */}
@@ -145,11 +168,11 @@ export default function StoryPlayPage() {
             <h3>故事创作完成！</h3>
             <p>太棒了！你们一起创造了一个精彩的故事~</p>
             <div className="story-ended-actions">
-              <Button variant="primary" onClick={() => navigate(`/gallery`)}>
-                📚 查看故事画廊
+              <Button variant="primary" onClick={() => id && navigate(`/talent/${id}`)}>
+                🧠 查看天赋画像
               </Button>
-              <Button variant="secondary" onClick={() => navigate('/characters')}>
-                🎭 再创作一个
+              <Button variant="secondary" onClick={() => navigate(`/gallery`)}>
+                📚 故事画廊
               </Button>
             </div>
           </div>
@@ -164,9 +187,45 @@ export default function StoryPlayPage() {
         {/* End story button */}
         {state.turnNumber >= 3 && !state.isEnding && !state.isStreaming && (
           <div className="story-end-action">
-            <button className="end-story-btn" onClick={handleEndStory}>
+            <button className="end-story-btn" onClick={() => setShowEndModal(true)}>
               🏁 给故事写一个结尾
             </button>
+          </div>
+        )}
+
+        {/* Ending choice modal */}
+        {showEndModal && (
+          <div className="end-modal-overlay" onClick={() => setShowEndModal(false)}>
+            <div className="end-modal animate-pop-in" onClick={e => e.stopPropagation()}>
+              <h3>🎬 故事结局</h3>
+              <div className="end-options">
+                <button className="end-option-btn" onClick={handleAIEnding}>
+                  <span className="end-option-icon">🤖</span>
+                  <span className="end-option-title">让故事导演写结局</span>
+                  <span className="end-option-desc">AI根据剧情发展，给出一个温暖的结尾</span>
+                </button>
+                <div className="end-option-divider"><span>或者</span></div>
+                <div className="end-option-child">
+                  <span className="end-option-icon">✏️</span>
+                  <span className="end-option-title">我来写结局</span>
+                  <textarea
+                    className="end-child-input"
+                    value={childEnding}
+                    onChange={e => setChildEnding(e.target.value)}
+                    placeholder="在这里写下你的故事结局..."
+                    rows={3}
+                  />
+                  <button
+                    className="end-child-submit"
+                    disabled={!childEnding.trim()}
+                    onClick={handleChildEnding}
+                  >
+                    ✨ 提交我的结局
+                  </button>
+                </div>
+              </div>
+              <button className="end-modal-close" onClick={() => setShowEndModal(false)}>关闭</button>
+            </div>
           </div>
         )}
       </div>

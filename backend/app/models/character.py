@@ -15,6 +15,7 @@ class Character(Base):
     avatar_type: Mapped[str] = mapped_column(String(50), nullable=False)
     avatar_color: Mapped[str] = mapped_column(String(7), nullable=False)
     personality: Mapped[str | None] = mapped_column(Text, nullable=True)
+    age_group: Mapped[str | None] = mapped_column(String(10), nullable=True)  # "4-7" or "8-12"
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     user = relationship("User", back_populates="characters")

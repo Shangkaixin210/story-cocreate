@@ -24,6 +24,7 @@ export default function CharacterPage() {
   const [selectedChar, setSelectedChar] = useState<Character | null>(null);
   const [theme, setTheme] = useState('');
   const [customTheme, setCustomTheme] = useState('');
+  const [storyTitle, setStoryTitle] = useState('');
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ export default function CharacterPage() {
     }
   }
 
-  async function handleCreate(data: { nickname: string; avatar_type: string; avatar_color: string; personality?: string }) {
+  async function handleCreate(data: { nickname: string; avatar_type: string; avatar_color: string; personality?: string; age_group?: string }) {
     const newChar = await createCharacter(data);
     setCharacters((prev) => [...prev, newChar]);
   }
@@ -71,6 +72,7 @@ export default function CharacterPage() {
       const story = await createStory({
         character_id: selectedChar.id,
         theme: effectiveTheme,
+        title: storyTitle.trim() || undefined,
       });
       navigate(`/play/${story.id}`);
     } catch (err: unknown) {
@@ -108,16 +110,30 @@ export default function CharacterPage() {
           )}
         </div>
 
-        {/* Right: Creator + Start */}
-        <div className="character-section">
-          <CharacterCreator onCreate={handleCreate} />
+        {/* Right: Creator + Start side by side */}
+        <div className="character-section character-section-right">
+          <div className="creator-start-row">
+            <div className="creator-start-col">
+              <CharacterCreator onCreate={handleCreate} />
+            </div>
+            {selectedChar && (
+              <div className="creator-start-col">
+                <div className="start-story-card animate-slide-up">
+                  <h3 className="section-title">🚀 开始故事</h3>
+                  <p className="start-story-char">
+                    角色：<strong>{selectedChar.nickname}</strong>
+                  </p>
 
-          {selectedChar && (
-            <div className="start-story-card animate-slide-up">
-              <h3 className="section-title">🚀 开始故事</h3>
-              <p className="start-story-char">
-                角色：<strong>{selectedChar.nickname}</strong>
-              </p>
+              <div className="start-field">
+                <label>📝 故事名字（可选）</label>
+                <input
+                  type="text"
+                  value={storyTitle}
+                  onChange={(e) => setStoryTitle(e.target.value)}
+                  placeholder="给你的故事取个名字吧"
+                  maxLength={50}
+                />
+              </div>
 
               <div className="theme-selector">
                 <label>选择故事主题</label>
@@ -148,11 +164,13 @@ export default function CharacterPage() {
 
               {error && <p className="start-error">😅 {error}</p>}
 
-              <Button variant="accent" size="lg" onClick={handleStartStory} disabled={starting}>
-                {starting ? '准备中...' : '✨ 开始创作故事'}
-              </Button>
-            </div>
-          )}
+                  <Button variant="accent" size="lg" onClick={handleStartStory} disabled={starting}>
+                    {starting ? '准备中...' : '✨ 开始创作故事'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -11,93 +11,150 @@ from app.prompts.story_director import build_system_prompt
 HEARTBEAT_INTERVAL = 8  # seconds — keep proxies/load-balancers alive
 
 
-def compute_observation(child_text: str) -> dict:
-    """Programmatic fallback: analyze child's text when LLM doesn't provide observation data.
+def compute_observation(child_text: str, age_group: str = "") -> dict:
+    """Programmatic fallback: analyze child's text for 5 language intelligence dimensions.
 
-    Uses objective metrics that don't depend on LLM following format instructions.
+    Based on Gardner's Multiple Intelligences (linguistic domain).
     """
     if not child_text or not child_text.strip():
-        return {"vocabulary_richness": 1, "vocabulary_examples": "",
-                "descriptive_ability": 1, "descriptive_examples": "",
-                "story_structure": 1, "structure_note": "无输入", "creativity_flags": []}
+        return {
+            "vocabulary_semantic": 1, "vocabulary_semantic_examples": "",
+            "sentence_fluency": 1, "sentence_fluency_examples": "",
+            "narrative_completeness": 1, "narrative_structure_note": "无输入",
+            "character_empathy": 1, "character_empathy_examples": "",
+            "creative_initiative": 1, "creative_initiative_examples": "",
+            "creativity_flags": [],
+        }
 
     text = child_text.strip()
-    words = text.split()
-    char_count = len(text)
+    words = [w for w in text if w not in '，。！？、；：""''（）']
+    word_count = len(text.replace(' ', ''))
+    sentences = [s.strip() for s in text.replace("！", "。").replace("？", "。").replace("!", ".").replace("?", ".").split("。") if len(s.strip()) >= 2]
 
-    # ── Vocabulary richness (1-5) ──
-    unique_words = len(set(w.lower() for w in words)) if words else 0
-    word_count = len(words)
-    unique_ratio = unique_words / max(word_count, 1)
-    # Score based on word count and unique ratio
-    if word_count >= 50 and unique_ratio >= 0.7:
-        vocab = 5
-    elif word_count >= 30 and unique_ratio >= 0.5:
-        vocab = 4
-    elif word_count >= 15:
-        vocab = 3
-    elif word_count >= 5:
-        vocab = 2
-    else:
-        vocab = 1
+    # ── 1. vocabulary_semantic ──
+    modifier_keywords = ["很", "非常", "特别", "极了", "极了", "最", "更", "太",
+                        "慢慢", "轻轻", "悄悄", "渐渐", "忽然", "突然", "已经", "正在"]
+    emotion_keywords = ["开心", "难过", "害怕", "生气", "惊讶", "兴奋", "担心", "喜欢",
+                       "感动", "伤心", "紧张", "骄傲", "害羞", "好奇", "着急", "幸福"]
+    concrete_keywords = []  # detected by word length
+    metaphor_signals = ["像", "仿佛", "好像", "如同", "似乎", "变成", "成了", "一样"]
+    personification_signals = ["说", "笑", "哭", "想", "知道", "告诉", "问", "回答"]
 
-    # Extract potential highlight words (longer, more specific words)
-    highlight_words = [w for w in words if len(w) >= 4 and w.lower() not in
-                       {'this', 'that', 'the', 'and', 'for', 'with', 'from', 'have', 'what', 'when'}]
-    vocab_examples = ", ".join(highlight_words[:8]) if highlight_words else ""
+    mod_count = sum(1 for kw in modifier_keywords if kw in text)
+    emo_count = sum(1 for kw in emotion_keywords if kw in text)
+    long_words = [w for w in text if len(w.encode('utf-8', errors='ignore')) >= 6]  # longer Chinese words
+    meta_count = sum(1 for kw in metaphor_signals if kw in text)
+    pers_count = sum(1 for kw in personification_signals if kw in text and any(c in text for c in ["：", "「", "\"", "“"]))
 
-    # ── Descriptive ability (1-5) ──
-    # Heuristic: longer sentences and use of adjectives/adverbs suggest better description
-    sentences = [s.strip() for s in text.replace("！", "。").replace("？", "。").replace("!", ".").replace("?", ".").split("。") if s.strip()]
-    avg_sentence_len = char_count / max(len(sentences), 1)
-    if avg_sentence_len >= 30 and len(sentences) >= 2:
-        desc = 5
-    elif avg_sentence_len >= 20 and len(sentences) >= 1:
-        desc = 4
-    elif avg_sentence_len >= 10:
-        desc = 3
-    elif char_count >= 10:
-        desc = 2
-    else:
-        desc = 1
+    semantic_score = 1
+    if mod_count >= 3 and meta_count >= 1: semantic_score = 5
+    elif mod_count >= 2 or (meta_count >= 1 and emo_count >= 1): semantic_score = 4
+    elif mod_count >= 1 or emo_count >= 1: semantic_score = 3
+    elif word_count >= 10: semantic_score = 2
 
-    desc_examples = sentences[0][:100] if sentences else ""
+    semantic_examples = []
+    if mod_count > 0: semantic_examples.append(f"修饰词×{mod_count}")
+    if emo_count > 0: semantic_examples.append(f"情绪词×{emo_count}")
+    if meta_count > 0: semantic_examples.append(f"比喻/拟人×{meta_count}")
+    semantic_examples_str = "; ".join(semantic_examples) if semantic_examples else ""
 
-    # ── Story structure (1-5) ──
-    # Heuristic: presence of cause-effect, time sequence, or plot elements
-    structure_signals = 0
-    for kw in ["因为", "所以", "然后", "后来", "突然", "发现", "于是", "最后", "结果",
-               "because", "so", "then", "suddenly", "found", "finally", "discovered"]:
-        if kw.lower() in text.lower():
-            structure_signals += 1
-    if structure_signals >= 4:
-        struct = 5
-    elif structure_signals >= 2:
-        struct = 4
-    elif structure_signals >= 1:
-        struct = 3
+    # ── 2. sentence_fluency ──
+    fluency = 1
+    if len(sentences) >= 4 and all(len(s) >= 5 for s in sentences):
+        fluency = 5
+    elif len(sentences) >= 3:
+        fluency = 4
     elif len(sentences) >= 2:
-        struct = 2
-    else:
-        struct = 1
+        fluency = 3
+    elif len(sentences) >= 1 and len(sentences[0]) >= 10:
+        fluency = 2
+
+    fluency_examples = sentences[0][:80] if sentences else ""
+
+    # ── 3. narrative_completeness ──
+    cause_signals = ["因为", "所以", "由于", "于是", "因此"]
+    conflict_signals = ["但是", "可是", "突然", "忽然", "没想到", "竟然", "居然", "不过"]
+    resolve_signals = ["然后", "后来", "最后", "终于", "结果", "发现", "解决了", "成功了"]
+    ending_signals = ["结束", "回家", "离开", "回到", "从此", "以后", "好了", "完了", "故事"]
+
+    cause_count = sum(1 for kw in cause_signals if kw in text)
+    conflict_count = sum(1 for kw in conflict_signals if kw in text)
+    resolve_count = sum(1 for kw in resolve_signals if kw in text)
+    ending_count = sum(1 for kw in ending_signals if kw in text)
+
+    struct_signals = cause_count + conflict_count + resolve_count + ending_count
+    completeness = 1
+    if cause_count >= 1 and conflict_count >= 1 and resolve_count >= 1: completeness = 5
+    elif conflict_count >= 1 and resolve_count >= 1: completeness = 4
+    elif cause_count >= 1 or conflict_count >= 1: completeness = 3
+    elif len(sentences) >= 2: completeness = 2
+
+    # ── 4. character_empathy ──
+    dialogue_signals = ["说", "问", "回答", "喊道", "叫道", "说道", "告诉", "喊", "叫",
+                       "：", "「", "」", "\"", "\"", "“", "”"]
+    thought_signals = ["想", "觉得", "感到", "认为", "希望", "害怕", "担心", "开心"]
+    emotion_in_context = any(kw in text for kw in ["开心", "难过", "害怕", "生气", "哭了", "笑了", "跳起来", "发抖"])
+
+    dialogue_count = sum(1 for kw in dialogue_signals if kw in text)
+    thought_count = sum(1 for kw in thought_signals if kw in text)
+
+    empathy = 1
+    if dialogue_count >= 3 and thought_count >= 1: empathy = 5
+    elif dialogue_count >= 2: empathy = 4
+    elif dialogue_count >= 1 or thought_count >= 1: empathy = 3
+    elif emotion_in_context: empathy = 2
+
+    empathy_examples = ""
+    if dialogue_count >= 1: empathy_examples += f"角色对话×{dialogue_count} "
+    if thought_count >= 1: empathy_examples += f"心理活动×{thought_count}"
+    empathy_examples = empathy_examples.strip()
+
+    # ── 5. creative_initiative ──
+    # Detect if child goes beyond the expected response: new characters, locations, objects
+    new_element_signals = 0
+    for kw in ["新", "突然出现", "没想到", "其实", "另外", "还有", "之前", "原来", "秘密", "隐藏"]:
+        if kw in text: new_element_signals += 1
+
+    # Count unique proper nouns / named entities (rough heuristic: consecutive capital/long words)
+    named_count = len([w for w in text if len(w.encode('utf-8', errors='ignore')) >= 9])
+
+    initiative = 1
+    if new_element_signals >= 3 and word_count >= 50: initiative = 5
+    elif new_element_signals >= 2: initiative = 4
+    elif new_element_signals >= 1: initiative = 3
+    elif word_count >= 20: initiative = 2
+
+    initiative_examples = f"新增元素×{new_element_signals}" if new_element_signals > 0 else ""
+
+    # ── Adjust for age group ──
+    if age_group == "4-7":
+        # Younger children: lenient scoring, reward any expression
+        semantic_score = min(5, semantic_score + 1)
+        fluency = min(5, fluency + 1)
+        completeness = min(5, completeness + (0 if word_count < 5 else 1))
+        empathy = min(5, empathy + (1 if word_count > 10 else 0))
+        initiative = min(5, initiative + 1)
 
     # ── Creativity flags ──
     flags = []
-    for kw, flag in [("突然", "unexpected_twist"), ("发现", "logical_consistency"),
-                     ("害怕", "emotional_depth"), ("开心", "emotional_depth"),
-                     ("好笑", "humor"), ("哈哈", "humor"),
-                     ("像", "rich_imagery"), ("仿佛", "rich_imagery"),
-                     ("因为", "logical_consistency"), ("所以", "logical_consistency")]:
+    for kw, flag in [("突然", "unexpected_twist"), ("像", "metaphor_usage"), ("仿佛", "metaphor_usage"),
+                     ("说", "original_dialogue"), ("生气", "emotional_depth"), ("开心", "emotional_depth"),
+                     ("哭了", "emotional_depth"), ("笑了", "emotional_depth"),
+                     ("好像", "personification"), ("因为", "logical_consistency"), ("所以", "logical_consistency")]:
         if kw in text and flag not in flags:
             flags.append(flag)
 
     return {
-        "vocabulary_richness": vocab,
-        "vocabulary_examples": vocab_examples,
-        "descriptive_ability": desc,
-        "descriptive_examples": desc_examples,
-        "story_structure": struct,
-        "structure_note": f"程序化评估: {word_count}词, {len(sentences)}句, {structure_signals}个结构信号",
+        "vocabulary_semantic": semantic_score,
+        "vocabulary_semantic_examples": semantic_examples_str,
+        "sentence_fluency": fluency,
+        "sentence_fluency_examples": fluency_examples,
+        "narrative_completeness": completeness,
+        "narrative_structure_note": f"起因×{cause_count} 冲突×{conflict_count} 解决×{resolve_count} 结尾×{ending_count}",
+        "character_empathy": empathy,
+        "character_empathy_examples": empathy_examples,
+        "creative_initiative": initiative,
+        "creative_initiative_examples": initiative_examples,
         "creativity_flags": flags,
     }
 
@@ -256,6 +313,7 @@ class LLMService:
         personality: str = "",
         theme: str = "",
         is_first_turn: bool = False,
+        age_group: str = "8-12",
     ) -> AsyncGenerator[dict, None]:
         """
         Stream-generate a story turn from the LLM.
@@ -269,6 +327,7 @@ class LLMService:
             personality=personality,
             theme=theme,
             is_first_turn=is_first_turn,
+            age_group=age_group,
         )
 
         full_messages = [

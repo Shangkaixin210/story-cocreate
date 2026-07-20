@@ -59,3 +59,35 @@
   text-align: center;
   margin-top: 8px;
 }
+
+/* Voice button */
+.voice-btn {
+  width: 44px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  background: #F5F0FF;
+  border: 2px solid #d0c0f0;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.voice-btn:hover { background: #E8E0FF; }
+.voice-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.voice-btn-active {
+  background: #FF4444;
+  border-color: #FF4444;
+  color: white;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.voice-error {
+  font-size: var(--font-size-xs);
+  color: var(--color-danger);
+  text-align: center;
+  margin-bottom: 4px;
+}

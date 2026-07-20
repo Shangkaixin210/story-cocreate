@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listStories, deleteStory, type Story } from '../api/endpoints';
+import { listStories, deleteStory, updateStory, type Story } from '../api/endpoints';
 import StoryCard from '../components/Gallery/StoryCard';
 import StoryReader from '../components/Gallery/StoryReader';
 import Modal from '../components/Shared/Modal';
@@ -35,6 +35,14 @@ export default function GalleryPage() {
     await deleteStory(story.id);
     setStories((prev) => prev.filter((s) => s.id !== story.id));
     if (readingStory?.id === story.id) setReadingStory(null);
+  }
+
+  async function handleRename(story: Story) {
+    const newTitle = prompt('给你的故事取个名字吧：', story.title || story.theme || '');
+    if (newTitle && newTitle.trim()) {
+      await updateStory(story.id, { title: newTitle.trim() });
+      loadStories();
+    }
   }
 
   function handleContinueStory(story: Story) {
@@ -101,18 +109,9 @@ export default function GalleryPage() {
                   <div key={story.id} className="gallery-story-wrapper">
                     <StoryCard story={story} onClick={() => setReadingStory(story)} />
                     <div className="gallery-story-actions">
-                      <button
-                        className="gallery-action-btn read"
-                        onClick={() => setReadingStory(story)}
-                      >
-                        📖 阅读
-                      </button>
-                      <button
-                        className="gallery-action-btn talent"
-                        onClick={() => navigate(`/talent/${story.id}`)}
-                      >
-                        🧠 天赋画像
-                      </button>
+                      <button className="gallery-action-btn read" onClick={() => setReadingStory(story)}>📖 阅读</button>
+                      <button className="gallery-action-btn rename" onClick={() => handleRename(story)}>✏️ 改名</button>
+                      <button className="gallery-action-btn talent" onClick={() => navigate(`/talent/${story.id}`)}>🧠 天赋画像</button>
                       <button
                         className="gallery-action-btn delete"
                         onClick={(e) => handleDelete(story, e)}

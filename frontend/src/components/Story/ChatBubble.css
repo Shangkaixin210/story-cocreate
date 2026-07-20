@@ -95,3 +95,34 @@
   color: var(--color-primary);
   font-weight: 700;
 }
+
+/* TTS button */
+.tts-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 4px 12px;
+  border-radius: var(--radius-button);
+  background: #F0F0FF;
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family);
+  border: 1px solid #d0d0f0;
+  transition: all var(--transition-fast);
+}
+.tts-btn:hover { background: #E0E0FF; }
+.tts-btn-active {
+  background: #FFE0E0;
+  border-color: #ffaaaa;
+  color: #cc3333;
+}
+
+/* Clickable text for word lookup */
+.chat-bubble-text {
+  cursor: default;
+  user-select: text;
+}
+.chat-bubble-text::selection {
+  background: var(--color-accent-light);
+}

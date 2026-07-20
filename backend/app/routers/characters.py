@@ -34,6 +34,7 @@ async def create_character(
         avatar_type=req.avatar_type,
         avatar_color=req.avatar_color,
         personality=req.personality,
+        age_group=req.age_group,
     )
     db.add(char)
     await db.commit()

@@ -52,6 +52,7 @@ async def create_story(
     story = Story(
         character_id=req.character_id,
         theme=req.theme,
+        title=req.title,
     )
     db.add(story)
     await db.commit()
@@ -178,6 +179,7 @@ async def story_turn(
                 personality=char.personality or "" if char else "",
                 theme=story.theme or "",
                 is_first_turn=is_first_turn,
+                age_group=char.age_group or "8-12" if char else "8-12",
             ):
                 if chunk["type"] == "narrative_chunk":
                     narrative_parts.append(chunk["text"])
@@ -229,7 +231,7 @@ async def story_turn(
                     # If LLM didn't provide observation, compute one programmatically
                     if not observation_data and child_msg and req.child_input and req.child_input.strip():
                         from app.services.llm_service import compute_observation
-                        observation_data = compute_observation(req.child_input)
+                        observation_data = compute_observation(req.child_input, char.age_group or "")
 
                     if observation_data and child_msg:
                         await observation_service.save_observation(

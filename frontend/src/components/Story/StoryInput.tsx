@@ -1,4 +1,5 @@
 import { useState, useRef, type FormEvent, type KeyboardEvent } from 'react';
+import { useSpeechInput } from '../../hooks/useSpeechInput';
 import './StoryInput.css';
 
 interface StoryInputProps {
@@ -13,7 +14,9 @@ export default function StoryInput({
   placeholder = '写下你的想法吧...',
 }: StoryInputProps) {
   const [text, setText] = useState('');
+  const [voiceError, setVoiceError] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { startListening, stopListening, listening, interim } = useSpeechInput();
 
   function handleSubmit(e?: FormEvent) {
     e?.preventDefault();
@@ -21,7 +24,7 @@ export default function StoryInput({
     if (!trimmed || disabled) return;
     onSubmit(trimmed);
     setText('');
-    // Auto-resize reset
+    setVoiceError('');
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
     }
@@ -42,30 +45,68 @@ export default function StoryInput({
     }
   }
 
+  async function handleVoiceInput() {
+    setVoiceError('');
+    if (listening) {
+      stopListening();
+      return;
+    }
+
+    // Check browser support first
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setVoiceError('你的浏览器不支持语音输入，请用 Chrome 浏览器打开~');
+      setTimeout(() => setVoiceError(''), 4000);
+      return;
+    }
+
+    try {
+      const transcript = await startListening();
+      setText((prev) => prev + transcript);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '语音识别失败，请再试一次~';
+      setVoiceError(msg);
+      setTimeout(() => setVoiceError(''), 4000);
+    }
+  }
+
   return (
-    <form className="story-input-wrapper" onSubmit={handleSubmit}>
+    <div className="story-input-wrapper">
+      {voiceError && (
+        <div className="voice-error">{voiceError}</div>
+      )}
       <div className="story-input-row">
+        <button
+          type="button"
+          className={`voice-btn ${listening ? 'voice-btn-active' : ''}`}
+          onClick={handleVoiceInput}
+          disabled={disabled}
+          title={listening ? '点击停止' : '语音输入'}
+        >
+          {listening ? '⏺' : '🎤'}
+        </button>
         <textarea
           ref={inputRef}
           className="story-input-field"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => { setText(e.target.value); setVoiceError(''); }}
           onKeyDown={handleKeyDown}
           onInput={handleInput}
-          placeholder={placeholder}
-          disabled={disabled}
+          placeholder={listening ? (interim || '正在聆听...请说话 🎤') : placeholder}
+          disabled={disabled || listening}
           rows={1}
         />
         <button
           type="submit"
           className="story-input-send"
           disabled={disabled || !text.trim()}
+          onClick={handleSubmit}
           title="发送"
         >
           🚀
         </button>
       </div>
-      <p className="story-input-hint">按 Enter 发送，Shift+Enter 换行</p>
-    </form>
+      <p className="story-input-hint">按 Enter 发送，Shift+Enter 换行 · 🎤 语音输入</p>
+    </div>
   );
 }

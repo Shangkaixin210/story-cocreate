@@ -21,6 +21,7 @@ export interface Character {
   avatar_type: string;
   avatar_color: string;
   personality: string | null;
+  age_group: string | null;
   created_at: string | null;
 }
 
@@ -98,7 +99,7 @@ export function listCharacters() {
   return apiFetch<Character[]>('/characters');
 }
 
-export function createCharacter(data: { nickname: string; avatar_type: string; avatar_color: string; personality?: string }) {
+export function createCharacter(data: { nickname: string; avatar_type: string; avatar_color: string; personality?: string; age_group?: string }) {
   return apiFetch<Character>('/characters', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -119,7 +120,7 @@ export function listStories(params?: { character_id?: number; status?: string })
   return apiFetch<Story[]>(`/stories${qs ? '?' + qs : ''}`);
 }
 
-export function createStory(data: { character_id: number; theme?: string }) {
+export function createStory(data: { character_id: number; theme?: string; title?: string }) {
   return apiFetch<Story>('/stories', {
     method: 'POST',
     body: JSON.stringify(data),

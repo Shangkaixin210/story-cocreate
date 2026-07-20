@@ -17,7 +17,7 @@ async def get_talent_profile(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get the language talent profile for a completed story."""
+    """Get the 5-dimension language talent profile for a completed story."""
     story = await db.get(Story, story_id)
     if not story:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="故事不存在")
@@ -26,36 +26,48 @@ async def get_talent_profile(
     if not char or char.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="故事不存在")
 
-    profile = await talent_service.generate_talent_profile(db, story_id)
-    if not profile:
+    p = await talent_service.generate_talent_profile(db, story_id)
+    if not p:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="无法生成天赋画像")
 
-    # Return as dict (dataclass → dict with proper field names)
     return {
-        "story_id": profile.story_id,
-        "story_title": profile.story_title,
-        "total_turns": profile.total_turns,
-        "completed": profile.completed,
-        "vocabulary_richness": profile.vocabulary_richness,
-        "descriptive_ability": profile.descriptive_ability,
-        "story_structure": profile.story_structure,
-        "vocabulary_trend": profile.vocabulary_trend,
-        "descriptive_trend": profile.descriptive_trend,
-        "structure_trend": profile.structure_trend,
-        "overall_level": profile.overall_level,
-        "overall_score": profile.overall_score,
-        "creativity_flags": profile.creativity_flags,
-        "dominant_flag": profile.dominant_flag,
-        "vocabulary_highlights": profile.vocabulary_highlights[:5],
-        "descriptive_highlights": profile.descriptive_highlights[:5],
-        "total_words_by_child": profile.total_words_by_child,
-        "avg_words_per_turn": profile.avg_words_per_turn,
-        "strengths": profile.strengths,
-        "suggestions": profile.suggestions,
-        "level_label": talent_service.LEVEL_DEFINITIONS.get(
-            profile.overall_level, talent_service.LEVEL_DEFINITIONS["继续探索中"]
-        )["label"],
-        "level_description": talent_service.LEVEL_DEFINITIONS.get(
-            profile.overall_level, talent_service.LEVEL_DEFINITIONS["继续探索中"]
-        )["description"],
+        "story_id": p.story_id,
+        "story_title": p.story_title,
+        "total_turns": p.total_turns,
+        "age_group": p.age_group,
+        "completed": p.completed,
+
+        # 5 dimensions
+        "avg_vocabulary_semantic": p.avg_vocabulary_semantic,
+        "avg_sentence_fluency": p.avg_sentence_fluency,
+        "avg_narrative_completeness": p.avg_narrative_completeness,
+        "avg_character_empathy": p.avg_character_empathy,
+        "avg_creative_initiative": p.avg_creative_initiative,
+        "overall_score": p.overall_score,
+
+        # Trends
+        "vocab_trend": p.vocab_trend,
+        "fluency_trend": p.fluency_trend,
+        "narrative_trend": p.narrative_trend,
+        "empathy_trend": p.empathy_trend,
+        "initiative_trend": p.initiative_trend,
+
+        # Level
+        "overall_level": p.overall_level,
+        "level_label": p.level_label,
+        "level_description": p.level_description,
+        "talent_tags": p.talent_tags,
+
+        # Highlights
+        "semantic_highlights": p.semantic_highlights[:5],
+        "empathy_highlights": p.empathy_highlights[:5],
+        "initiative_highlights": p.initiative_highlights[:5],
+
+        # Stats
+        "total_words": p.total_words,
+        "avg_words_per_turn": p.avg_words_per_turn,
+
+        # Feedback
+        "strengths": p.strengths,
+        "suggestions": p.suggestions,
     }

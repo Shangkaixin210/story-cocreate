@@ -5,7 +5,7 @@
 .character-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 16px;
   width: 100%;
 }
 
@@ -13,6 +13,25 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.character-section-right {
+  overflow: visible;
+}
+
+.creator-start-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.creator-start-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.creator-start-col .character-creator {
+  height: 100%;
 }
 
 .section-title {
@@ -116,13 +135,38 @@
   font-size: 22px;
 }
 
+.start-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.start-field label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  font-weight: 700;
+}
+.start-field input {
+  width: 100%;
+  font-size: var(--font-size-body);
+  padding: 10px 14px;
+  border: 2px solid #E0D5C7;
+  border-radius: var(--radius-md);
+}
+.start-field input:focus {
+  border-color: var(--color-primary);
+}
+
 .start-error {
   color: var(--color-danger);
   text-align: center;
   font-size: var(--font-size-sm);
 }
 
-@media (max-width: 700px) {
+@media (max-width: 750px) {
+  .creator-start-row {
+    flex-direction: column;
+  }
   .character-layout {
     grid-template-columns: 1fr;
   }

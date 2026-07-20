@@ -44,11 +44,15 @@
   font-size: var(--font-size-body);
   color: var(--color-text);
   margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .character-type {
   font-size: var(--font-size-xs);
   color: var(--color-text-light);
+  white-space: nowrap;
 }
 
 .character-delete {

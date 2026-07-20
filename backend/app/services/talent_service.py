@@ -1,9 +1,14 @@
 """
-Language talent profile generator.
+Language talent profile generator v2.
 
-Analyzes observation data collected during story co-creation
-and produces a language-intelligence profile based on Gardner's
-Multiple Intelligences theory (linguistic dimension).
+5-dimension model based on Gardner's Multiple Intelligences (linguistic domain):
+1. vocabulary_semantic   — 词汇语义敏感度
+2. sentence_fluency       — 句式与表达流畅度
+3. narrative_completeness — 叙事宏观完整度
+4. character_empathy      — 角色语言共情
+5. creative_initiative    — 创作主动性
+
+Supports two age groups: 4-7 (lenient) and 8-12 (standard).
 """
 
 import json
@@ -18,73 +23,80 @@ from app.models.story import Story
 
 @dataclass
 class LanguageTalentProfile:
-    """Complete language talent assessment for one story."""
-
     story_id: int
     story_title: str
     total_turns: int
+    age_group: str
     completed: bool
 
-    # Dimension scores (1-5 scale)
-    vocabulary_richness: float | None = None       # 词汇丰富度
-    descriptive_ability: float | None = None       # 描述能力
-    story_structure: float | None = None           # 故事结构/逻辑
-
-    # Trends
-    vocabulary_trend: str = ""      # "上升" "稳定" "波动"
-    descriptive_trend: str = ""
-    structure_trend: str = ""
-
-    # Overall assessment
-    overall_level: str = ""         # "语言小天才" / "语言小达人" / "语言小萌芽" / "继续探索中"
+    # 5-dimension scores
+    avg_vocabulary_semantic: float | None = None
+    avg_sentence_fluency: float | None = None
+    avg_narrative_completeness: float | None = None
+    avg_character_empathy: float | None = None
+    avg_creative_initiative: float | None = None
     overall_score: float | None = None
 
-    # Creativity
-    creativity_flags: list[str] = field(default_factory=list)
-    dominant_flag: str = ""
+    # Trends
+    vocab_trend: str = ""
+    fluency_trend: str = ""
+    narrative_trend: str = ""
+    empathy_trend: str = ""
+    initiative_trend: str = ""
+
+    # Levels
+    overall_level: str = ""
+    level_label: str = ""
+    level_description: str = ""
+    talent_tags: list[str] = field(default_factory=list)
 
     # Highlights
-    vocabulary_highlights: list[str] = field(default_factory=list)
-    descriptive_highlights: list[str] = field(default_factory=list)
+    semantic_highlights: list[str] = field(default_factory=list)
+    empathy_highlights: list[str] = field(default_factory=list)
+    initiative_highlights: list[str] = field(default_factory=list)
 
-    # Narrative arc analysis
-    total_words_by_child: int = 0
+    # Stats
+    total_words: int = 0
     avg_words_per_turn: float = 0.0
 
-    # Growth suggestions
+    # Feedback
     strengths: list[str] = field(default_factory=list)
     suggestions: list[str] = field(default_factory=list)
 
 
-LEVEL_DEFINITIONS = {
-    "语言小天才": {
-        "min_score": 4.0,
-        "label": "🌟 语言小天才",
-        "description": "你在语言表达方面展现出非凡的天赋！词汇丰富、描述生动、故事逻辑清晰，就像一个天生的小作家。",
-    },
-    "语言小达人": {
-        "min_score": 3.0,
-        "label": "✨ 语言小达人",
-        "description": "你的语言能力很好！能够用丰富的词汇讲述故事，描述也很生动。继续创作，你会越来越棒！",
-    },
-    "语言小萌芽": {
-        "min_score": 2.0,
-        "label": "🌱 语言小萌芽",
-        "description": "你的语言能力正在萌芽！虽然有时回答简短，但你已经能参与到故事中了。多读多讲，你的语言天赋会慢慢绽放！",
-    },
-    "继续探索中": {
-        "min_score": 0,
-        "label": "🔍 继续探索中",
-        "description": "每个孩子都有自己的节奏。现在可能还不太爱表达，但没关系！多听故事、多聊天，语言能力会自然成长。",
-    },
-}
+# ── Level definitions by age group ──
+
+LEVELS_8_12 = [
+    {"name": "语言优势型", "min": 4.0, "label": "🌟 语言优势型",
+     "desc": "展现出卓越的语言天赋！能独立搭建完整故事闭环，运用丰富的修辞手法，为角色赋予差异化台词与内心独白。你的文字里住着一位天生的创作者。建议：多读经典文学作品，参加写作或演讲活动，让天赋在系统的训练中进一步绽放。"},
+    {"name": "能力均衡型", "min": 2.5, "label": "✨ 能力均衡型",
+     "desc": "语言能力发展均衡！能完成基础故事框架，有一定修饰和情节意识。每一段创作都在为语言能力添砖加瓦。建议：多尝试不同类型的写作（记叙文、诗歌、剧本），在多样化练习中找到自己最擅长的表达方式。"},
+    {"name": "潜力待激活", "min": 0, "label": "🌱 潜力待激活",
+     "desc": "语言天赋的种子正在蓄力。可能目前回答较为简短或被框架限制，但每一次开口都在积累语言素材。建议：从感兴趣的话题切入，用聊天的形式多讲故事，降低写作压力，让语言自然流动起来。"},
+]
+
+LEVELS_4_7 = [
+    {"name": "语言优势型", "min": 3.5, "label": "🧚 语言优势型",
+     "desc": "语言表达非常活跃！喜欢创编故事、主动描述画面、模仿角色说话，口语输出欲旺盛。这是语言天赋的早期闪光信号。建议：多读绘本，鼓励TA把看到的画面用自己的话说出来，表扬每一次主动表达。"},
+    {"name": "能力均衡型", "min": 2.5, "label": "🎈 能力均衡型",
+     "desc": "语言能力发展均衡！能跟随引导参与故事，有基本的表达和描述意识。这是健康发展的节奏。建议：多用开放式问题激发表达，减少选择式提问，给TA更多自由发挥空间。"},
+    {"name": "潜力待激活", "min": 0, "label": "🌿 潜力待激活",
+     "desc": "语言表达的种子刚刚萌芽。可能更倾向于听故事而非讲故事，或者需要更多时间和安全感来开口。这完全正常——每个孩子都有自己的节奏。建议：从模仿角色声音开始，用游戏的方式降低表达门槛，多听多输入。"},
+]
 
 
-async def generate_talent_profile(
-    db: AsyncSession, story_id: int
-) -> LanguageTalentProfile | None:
-    """Generate a language talent profile from observation data."""
+def _compute_trend(scores: list[int]) -> str:
+    if len(scores) < 2: return "数据不足"
+    mid = len(scores) // 2
+    first = sum(scores[:mid]) / mid
+    second = sum(scores[mid:]) / (len(scores) - mid)
+    diff = second - first
+    if diff > 0.5: return "上升 📈"
+    elif diff < -0.5: return "回落 🔄"
+    else: return "稳定 ➡️"
 
+
+async def generate_talent_profile(db: AsyncSession, story_id: int) -> LanguageTalentProfile | None:
     story = await db.get(Story, story_id)
     if not story:
         return None
@@ -94,158 +106,138 @@ async def generate_talent_profile(
         .where(Observation.story_id == story_id)
         .order_by(Observation.turn_number)
     )
-    observations = result.scalars().all()
+    obs_list = result.scalars().all()
 
-    profile = LanguageTalentProfile(
+    # Get age_group from character
+    from app.models.character import Character
+    char = await db.get(Character, story.character_id)
+    age_group = char.age_group or "8-12" if char else "8-12"
+
+    p = LanguageTalentProfile(
         story_id=story_id,
         story_title=story.title or story.theme or "未命名故事",
-        total_turns=len(observations),
+        total_turns=len(obs_list),
+        age_group=age_group,
         completed=(story.status == "completed"),
     )
 
-    if not observations:
-        profile.overall_level = "继续探索中"
-        profile.suggestions = ["多和故事导演聊天，创作更多故事吧！"]
-        return profile
+    if not obs_list:
+        p.overall_level = "继续探索中"
+        p.suggestions = ["多和故事导演聊天，创作更多故事吧！"]
+        return p
 
-    # ── Score averages ──
-    vocab_scores = [o.vocabulary_richness for o in observations if o.vocabulary_richness is not None]
-    desc_scores = [o.descriptive_ability for o in observations if o.descriptive_ability is not None]
-    struct_scores = [o.story_structure for o in observations if o.story_structure is not None]
+    # ── Averages ──
+    scores = {
+        "vocab": [o.vocabulary_semantic for o in obs_list if o.vocabulary_semantic is not None],
+        "fluency": [o.sentence_fluency for o in obs_list if o.sentence_fluency is not None],
+        "narrative": [o.narrative_completeness for o in obs_list if o.narrative_completeness is not None],
+        "empathy": [o.character_empathy for o in obs_list if o.character_empathy is not None],
+        "initiative": [o.creative_initiative for o in obs_list if o.creative_initiative is not None],
+    }
 
-    if vocab_scores:
-        profile.vocabulary_richness = round(sum(vocab_scores) / len(vocab_scores), 1)
-    if desc_scores:
-        profile.descriptive_ability = round(sum(desc_scores) / len(desc_scores), 1)
-    if struct_scores:
-        profile.story_structure = round(sum(struct_scores) / len(struct_scores), 1)
+    p.avg_vocabulary_semantic = round(sum(scores["vocab"]) / len(scores["vocab"]), 1) if scores["vocab"] else None
+    p.avg_sentence_fluency = round(sum(scores["fluency"]) / len(scores["fluency"]), 1) if scores["fluency"] else None
+    p.avg_narrative_completeness = round(sum(scores["narrative"]) / len(scores["narrative"]), 1) if scores["narrative"] else None
+    p.avg_character_empathy = round(sum(scores["empathy"]) / len(scores["empathy"]), 1) if scores["empathy"] else None
+    p.avg_creative_initiative = round(sum(scores["initiative"]) / len(scores["initiative"]), 1) if scores["initiative"] else None
 
     # ── Trends ──
-    profile.vocabulary_trend = _compute_trend(vocab_scores)
-    profile.descriptive_trend = _compute_trend(desc_scores)
-    profile.structure_trend = _compute_trend(struct_scores)
+    p.vocab_trend = _compute_trend(scores["vocab"])
+    p.fluency_trend = _compute_trend(scores["fluency"])
+    p.narrative_trend = _compute_trend(scores["narrative"])
+    p.empathy_trend = _compute_trend(scores["empathy"])
+    p.initiative_trend = _compute_trend(scores["initiative"])
 
-    # ── Overall score & level ──
-    all_scores = [s for s in [profile.vocabulary_richness, profile.descriptive_ability, profile.story_structure] if s is not None]
-    if all_scores:
-        profile.overall_score = round(sum(all_scores) / len(all_scores), 1)
-    else:
-        profile.overall_score = 0.0
+    # ── Overall score ──
+    all_avgs = [v for v in [p.avg_vocabulary_semantic, p.avg_sentence_fluency,
+                             p.avg_narrative_completeness, p.avg_character_empathy,
+                             p.avg_creative_initiative] if v is not None]
+    p.overall_score = round(sum(all_avgs) / len(all_avgs), 1) if all_avgs else 0.0
 
-    for level_name, level_def in LEVEL_DEFINITIONS.items():
-        if (profile.overall_score or 0) >= level_def["min_score"]:
-            profile.overall_level = level_name
+    # ── Level ──
+    levels = LEVELS_4_7 if age_group == "4-7" else LEVELS_8_12
+    for lv in levels:
+        if (p.overall_score or 0) >= lv["min"]:
+            p.overall_level = lv["name"]
+            p.level_label = lv["label"]
+            p.level_description = lv["desc"]
             break
 
-    # ── Creativity flags ──
-    flag_counts: dict[str, int] = {}
-    for o in observations:
-        if o.creativity_flags:
-            try:
-                flags = json.loads(o.creativity_flags)
-                for f in flags:
-                    flag_counts[f] = flag_counts.get(f, 0) + 1
-            except json.JSONDecodeError:
-                pass
-    profile.creativity_flags = sorted(flag_counts.keys(), key=lambda f: flag_counts[f], reverse=True)
-    if profile.creativity_flags:
-        profile.dominant_flag = profile.creativity_flags[0]
+    # ── Talent tags ──
+    tags = []
+    if (p.avg_vocabulary_semantic or 0) >= 4: tags.append("词汇小达人")
+    if (p.avg_sentence_fluency or 0) >= 4: tags.append("流畅叙事者")
+    if (p.avg_narrative_completeness or 0) >= 4: tags.append("故事架构师")
+    if (p.avg_character_empathy or 0) >= 4: tags.append("角色灵魂师")
+    if (p.avg_creative_initiative or 0) >= 4: tags.append("创意探险家")
+    if not tags: tags.append("语言探索者")
+    p.talent_tags = tags
 
     # ── Highlights ──
-    for o in observations:
-        if o.vocabulary_examples and o.vocabulary_examples.strip():
-            profile.vocabulary_highlights.append(o.vocabulary_examples.strip())
-        if o.descriptive_examples and o.descriptive_examples.strip():
-            profile.descriptive_highlights.append(o.descriptive_examples.strip())
+    for o in obs_list:
+        if o.vocabulary_semantic_examples and o.vocabulary_semantic_examples.strip():
+            p.semantic_highlights.append(o.vocabulary_semantic_examples.strip())
+        if o.character_empathy_examples and o.character_empathy_examples.strip():
+            p.empathy_highlights.append(o.character_empathy_examples.strip())
+        if o.creative_initiative_examples and o.creative_initiative_examples.strip():
+            p.initiative_highlights.append(o.creative_initiative_examples.strip())
 
-    # ── Word count analysis ──
-    # Count words from child messages
+    # ── Word count ──
     from app.models.message import StoryMessage
     msg_result = await db.execute(
         select(StoryMessage)
         .where(StoryMessage.story_id == story_id, StoryMessage.role == "child")
     )
     child_msgs = msg_result.scalars().all()
-    for msg in child_msgs:
-        profile.total_words_by_child += len(msg.content)
-    if len(child_msgs) > 0:
-        profile.avg_words_per_turn = round(profile.total_words_by_child / len(child_msgs), 1)
+    p.total_words = sum(len(m.content) for m in child_msgs)
+    p.avg_words_per_turn = round(p.total_words / len(child_msgs), 1) if child_msgs else 0.0
 
     # ── Strengths & suggestions ──
-    profile.strengths, profile.suggestions = _generate_feedback(profile)
+    p.strengths, p.suggestions = _generate_feedback(p)
 
-    return profile
-
-
-def _compute_trend(scores: list[int]) -> str:
-    """Compute simple trend: rising, stable, or fluctuating."""
-    if len(scores) < 2:
-        return "数据不足"
-    first_half = sum(scores[: len(scores) // 2]) / (len(scores) // 2)
-    second_half = sum(scores[len(scores) // 2 :]) / (len(scores) - len(scores) // 2)
-    diff = second_half - first_half
-    if diff > 0.5:
-        return "上升 📈"
-    elif diff < -0.5:
-        return "波动 🔄"
-    else:
-        return "稳定 ➡️"
+    return p
 
 
-FLAG_LABELS = {
-    "unexpected_twist": "意外转折",
-    "rich_imagery": "丰富意象",
-    "emotional_depth": "情感深度",
-    "logical_consistency": "逻辑一致",
-    "humor": "幽默感",
-}
-
-
-def _generate_feedback(profile: LanguageTalentProfile) -> tuple[list[str], list[str]]:
-    """Generate strengths and suggestions based on profile data."""
+def _generate_feedback(p: LanguageTalentProfile) -> tuple[list[str], list[str]]:
     strengths: list[str] = []
     suggestions: list[str] = []
 
-    if profile.vocabulary_richness is not None:
-        if profile.vocabulary_richness >= 4:
-            strengths.append("词汇量丰富，善于使用精准生动的词语表达想法")
-        elif profile.vocabulary_richness >= 3:
-            strengths.append("基本词汇掌握良好，能清晰表达自己的想法")
-            suggestions.append("多读故事书，遇到不认识的词可以记下来问问大人")
-        else:
-            suggestions.append("试着用更多形容词来描述你看到的东西，比如颜色、形状、感觉")
+    dims = [
+        (p.avg_vocabulary_semantic, "词汇语义敏感度",
+         "善于使用丰富的修饰词、情绪词和修辞手法，语言富有感染力",
+         "试试在描述中加入比喻——'像……一样'的句式能让画面立刻生动起来"),
+        (p.avg_sentence_fluency, "句式表达流畅度",
+         "叙事清晰连贯，表达流畅自然",
+         "讲故事时可以试着先说'首先……然后……最后……'，这样听众能更好地跟上你的节奏"),
+        (p.avg_narrative_completeness, "叙事完整度",
+         "能构建完整的起因-冲突-解决的故事结构，很有导演思维",
+         "想一想你的故事里有没有一个'问题'要解决？有了问题和解决办法，故事会更精彩"),
+        (p.avg_character_empathy, "角色共情能力",
+         "擅长让角色说话、思考和感受，故事里的人物活起来了",
+         "试试给你的角色写一句TA最想说的话，或者TA此刻心里在想什么"),
+        (p.avg_creative_initiative, "创作主动性",
+         "创作欲满满！不满足于框架，主动拓展新剧情和新细节",
+         "每次多一点：在AI给出的情节之外，再加一个你自己想到的小插曲"),
+    ]
 
-    if profile.descriptive_ability is not None:
-        if profile.descriptive_ability >= 4:
-            strengths.append("描述能力出色，能用语言在听众脑海中画出画面")
-        elif profile.descriptive_ability >= 3:
-            strengths.append("具备基本描述能力，能把事情讲清楚")
-            suggestions.append("讲故事时可以试着描述'看到了什么、听到了什么、闻到了什么'")
-        else:
-            suggestions.append("试着描述你最喜欢的一个地方，说说那里是什么样的")
+    for score, name, strength_msg, suggestion_msg in dims:
+        if score is not None:
+            if score >= 4:
+                strengths.append(f"{name}：{strength_msg}")
+            elif score < 2.5 and not (p.age_group == "4-7" and score >= 2):
+                suggestions.append(suggestion_msg)
 
-    if profile.story_structure is not None:
-        if profile.story_structure >= 4:
-            strengths.append("故事逻辑清晰，能把握起因-经过-结果的故事脉络")
-        elif profile.story_structure >= 3:
-            strengths.append("能够参与故事的情节推进，有一定的逻辑性")
-            suggestions.append("讲故事时可以想一想：先发生了什么？然后呢？最后怎么样了？")
-        else:
-            suggestions.append("讲故事时试试这三个问题：谁？在哪里？做了什么？")
+    if p.vocab_trend == "上升 📈":
+        strengths.append("词汇语义敏感度持续上升，进步明显！")
+    if p.initiative_trend == "上升 📈":
+        strengths.append("创作主动性越来越强，故事越写越精彩！")
 
-    if profile.creativity_flags:
-        flag_names = [FLAG_LABELS.get(f, f) for f in profile.creativity_flags[:3]]
-        strengths.append(f"创造力亮点：{'、'.join(flag_names)}")
-
-    if profile.avg_words_per_turn < 5 and profile.total_turns > 1:
-        suggestions.append("每次可以多写一点哦！哪怕多写一句话，故事都会变得更精彩")
-
-    if profile.vocabulary_trend == "上升 📈":
-        strengths.append("词汇丰富度在持续上升，进步明显！")
+    if p.avg_words_per_turn < 5 and p.total_turns > 1:
+        suggestions.append("每次多写一点点，哪怕多一句话，故事都会变得更精彩")
 
     if not strengths:
-        strengths.append("已经开始参与故事创作，这是一个很棒的起点！")
+        strengths.append("已经开始用语言创作故事，这是一个了不起的起点！")
     if not suggestions:
-        suggestions.append("继续保持创作热情，多写多讲，语言能力会越来越强！")
+        suggestions.append("继续保持创作热情，你的语言天赋正在闪闪发光！")
 
-    return strengths, suggestions
+    return strengths[:5], suggestions[:5]

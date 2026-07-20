@@ -8,6 +8,7 @@ class CharacterCreate(BaseModel):
     avatar_type: str
     avatar_color: str
     personality: str | None = None
+    age_group: str | None = None  # "4-7" or "8-12"
 
 
 class CharacterOut(BaseModel):
@@ -17,6 +18,7 @@ class CharacterOut(BaseModel):
     avatar_type: str
     avatar_color: str
     personality: str | None = None
+    age_group: str | None = None
     created_at: str | None = None
 
     @field_validator("created_at", mode="before")

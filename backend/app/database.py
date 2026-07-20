@@ -22,12 +22,25 @@ async def get_db() -> AsyncSession:
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    # Auto-migrate: add personality column if upgrading from older schema
+    # Auto-migrate: add new columns for schema upgrades
     async with engine.connect() as conn:
-        try:
-            await conn.exec_driver_sql(
-                "ALTER TABLE characters ADD COLUMN personality TEXT"
-            )
-            await conn.commit()
-        except Exception:
-            pass  # Column already exists — safe to ignore
+        migrations = [
+            "ALTER TABLE characters ADD COLUMN personality TEXT",
+            "ALTER TABLE characters ADD COLUMN age_group VARCHAR(10)",
+            "ALTER TABLE observations ADD COLUMN vocabulary_semantic INTEGER",
+            "ALTER TABLE observations ADD COLUMN vocabulary_semantic_examples TEXT",
+            "ALTER TABLE observations ADD COLUMN sentence_fluency INTEGER",
+            "ALTER TABLE observations ADD COLUMN sentence_fluency_examples TEXT",
+            "ALTER TABLE observations ADD COLUMN narrative_completeness INTEGER",
+            "ALTER TABLE observations ADD COLUMN narrative_structure_note TEXT",
+            "ALTER TABLE observations ADD COLUMN character_empathy INTEGER",
+            "ALTER TABLE observations ADD COLUMN character_empathy_examples TEXT",
+            "ALTER TABLE observations ADD COLUMN creative_initiative INTEGER",
+            "ALTER TABLE observations ADD COLUMN creative_initiative_examples TEXT",
+        ]
+        for sql in migrations:
+            try:
+                await conn.exec_driver_sql(sql)
+                await conn.commit()
+            except Exception:
+                pass  # Column already exists

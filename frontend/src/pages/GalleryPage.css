@@ -102,6 +102,15 @@
   color: white;
 }
 
+.gallery-action-btn.rename {
+  background: #E8F5E9;
+  color: #388E3C;
+}
+.gallery-action-btn.rename:hover {
+  background: #388E3C;
+  color: white;
+}
+
 .gallery-action-btn.delete {
   background: transparent;
   color: var(--color-text-light);
