@@ -44,7 +44,7 @@ export default function CharacterPage() {
     }
   }
 
-  async function handleCreate(data: { nickname: string; avatar_type: string; avatar_color: string; personality?: string; age_group?: string }) {
+  async function handleCreate(data: { nickname: string; avatar_type: string; avatar_color: string; personality?: string; age_group: '4-7' | '8-12' }) {
     const newChar = await createCharacter(data);
     setCharacters((prev) => [...prev, newChar]);
   }
@@ -60,6 +60,10 @@ export default function CharacterPage() {
 
   async function handleStartStory() {
     if (!selectedChar) return;
+    if (selectedChar.age_group !== '4-7' && selectedChar.age_group !== '8-12') {
+      setError('请先选择年龄创作通道');
+      return;
+    }
     const isCustomTheme = theme === '__custom__';
     if (isCustomTheme && !customTheme.trim()) {
       setError('请填写自定义主题哦~');
@@ -123,6 +127,7 @@ export default function CharacterPage() {
                   <p className="start-story-char">
                     角色：<strong>{selectedChar.nickname}</strong>
                   </p>
+
 
               <div className="start-field">
                 <label>📝 故事名字（可选）</label>

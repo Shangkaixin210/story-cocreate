@@ -31,7 +31,7 @@ export function useSSE() {
       abortRef.current = new AbortController();
 
       const doStream = async () => {
-        const response = await sendStoryTurn(storyId, childInput, abortRef.current!.signal);
+        const response = await sendStoryTurn(storyId, childInput, abortRef.current!.signal, skipQuestion);
 
         if (!response.ok) {
           let errMsg = '故事导演暂时离开了';
@@ -125,6 +125,12 @@ export function useSSE() {
           text: data.text as string,
           imageUrl: data.image_url as string | undefined,
         });
+        break;
+
+      case 'illustration':
+        if (typeof data.image_url === 'string' && data.image_url) {
+          dispatch({ type: 'SET_AI_IMAGE', imageUrl: data.image_url });
+        }
         break;
 
       case 'question':

@@ -5,11 +5,21 @@ import { useStoryState, type ChatMessage } from '../contexts/StoryContext';
 import { getStory, getStoryMessages, updateStory, type StoryMessage } from '../api/endpoints';
 import ChatBubble from '../components/Story/ChatBubble';
 import StoryInput from '../components/Story/StoryInput';
-import StoryProgress from '../components/Story/StoryProgress';
 import TypingIndicator from '../components/Story/TypingIndicator';
 import Button from '../components/Shared/Button';
 import Loading from '../components/Shared/Loading';
 import './StoryPlayPage.css';
+
+function extractStoredImageUrl(message: StoryMessage): string | undefined {
+  if (!message.ai_raw_response) return undefined;
+  try {
+    const raw = JSON.parse(message.ai_raw_response) as { image_urls?: unknown };
+    if (!Array.isArray(raw.image_urls)) return undefined;
+    return raw.image_urls.find((url): url is string => typeof url === 'string' && url.length > 0);
+  } catch {
+    return undefined;
+  }
+}
 
 export default function StoryPlayPage() {
   const { storyId } = useParams<{ storyId: string }>();
@@ -39,8 +49,14 @@ export default function StoryPlayPage() {
         role: m.role as 'ai' | 'child',
         content: m.content,
         isQuestion: false,
+        imageUrl: extractStoredImageUrl(m),
       }));
-      dispatch({ type: 'RESTORE_MESSAGES', messages: chatMessages, turnNumber: story.turn_count });
+      dispatch({
+        type: 'RESTORE_MESSAGES',
+        messages: chatMessages,
+        turnNumber: story.turn_count,
+        isEnding: story.status === 'completed',
+      });
       setStoryTitleState(story.title || '');
 
       // Auto-trigger first turn: if story has 0 turns, AI kicks off the story
@@ -84,8 +100,7 @@ export default function StoryPlayPage() {
   async function handleAIEnding() {
     if (!id) return;
     setShowEndModal(false);
-    // Mark completed immediately + let AI write ending (skip questions)
-    await updateStory(id, { status: 'completed' });
+    // Keep the story active until the director has written and saved the ending.
     await startTurn(id, '请从刚才的情节继续，给这个故事写一个完整的大结局吧！', true);
   }
 
@@ -121,7 +136,6 @@ export default function StoryPlayPage() {
           placeholder="未命名故事"
           maxLength={30}
         />
-        <StoryProgress turn={state.turnNumber} maxTurns={15} isEnding={state.isEnding} />
       </div>
 
       {/* Safety notice banner */}

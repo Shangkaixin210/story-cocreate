@@ -466,6 +466,57 @@ class LLMService:
             pass
 
 
+    async def evaluate_turn(self, child_text: str, age_group: str = "8-12") -> dict:
+        """Call Talent Evaluator agent to analyze child's language output.
+
+        Returns a dict with the 5-dimension observation data.
+        Falls back to compute_observation() on any error.
+        """
+        from app.prompts.talent_evaluator import build_evaluator_prompt
+
+        if not child_text or not child_text.strip():
+            return compute_observation(child_text, age_group)
+
+        evaluator_prompt = build_evaluator_prompt(age_group)
+
+        try:
+            resp = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": evaluator_prompt},
+                    {"role": "user", "content": child_text.strip()},
+                ],
+                stream=False,
+                temperature=0.3,   # Low temp for consistent scoring
+                max_tokens=500,
+                timeout=15.0,
+            )
+            content = (resp.choices[0].message.content or "").strip()
+            # Some compatible model providers wrap JSON in Markdown fences.
+            if content.startswith("```"):
+                content = content.removeprefix("```json").removeprefix("```")
+                content = content.removesuffix("```").strip()
+            data = json.loads(content)
+            score = lambda key: max(1, min(5, int(data.get(key, 1))))
+            # Ensure all required fields exist
+            return {
+                "vocabulary_semantic": score("vocabulary_semantic"),
+                "vocabulary_semantic_examples": data.get("vocabulary_semantic_examples", ""),
+                "sentence_fluency": score("sentence_fluency"),
+                "sentence_fluency_examples": data.get("sentence_fluency_examples", ""),
+                "narrative_completeness": score("narrative_completeness"),
+                "narrative_structure_note": data.get("narrative_structure_note", ""),
+                "character_empathy": score("character_empathy"),
+                "character_empathy_examples": data.get("character_empathy_examples", ""),
+                "creative_initiative": score("creative_initiative"),
+                "creative_initiative_examples": data.get("creative_initiative_examples", ""),
+                "creativity_flags": data.get("creativity_flags", []),
+            }
+        except Exception:
+            # Fallback to programmatic scoring
+            return compute_observation(child_text, age_group)
+
+
 class LLMServiceError(Exception):
     pass
 

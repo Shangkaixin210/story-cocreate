@@ -10,11 +10,20 @@ import CharacterPage from './pages/CharacterPage';
 import StoryPlayPage from './pages/StoryPlayPage';
 import GalleryPage from './pages/GalleryPage';
 import TalentPage from './pages/TalentPage';
+import ChannelPage from './pages/ChannelPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <Loading text="加载中..." />;
   if (!user) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
+function ChannelGuard({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <Loading text="加载中..." />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!user.age_group) return <Navigate to="/channel" replace />;
   return <>{children}</>;
 }
 
@@ -30,10 +39,20 @@ function AppRoutes() {
         element={user ? <Navigate to="/" replace /> : <LoginPage />}
       />
       <Route
+        path="/channel"
+        element={
+          <ProtectedRoute>
+            <ChannelPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/"
         element={
           <ProtectedRoute>
-            <HomePage />
+            <ChannelGuard>
+              <HomePage />
+            </ChannelGuard>
           </ProtectedRoute>
         }
       />

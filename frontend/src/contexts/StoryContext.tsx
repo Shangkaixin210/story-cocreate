@@ -33,10 +33,11 @@ type TurnAction =
   | { type: 'ADD_CHILD_MESSAGE'; content: string }
   | { type: 'START_AI_STREAMING' }
   | { type: 'APPEND_NARRATIVE_CHUNK'; text: string; imageUrl?: string }
+  | { type: 'SET_AI_IMAGE'; imageUrl: string }
   | { type: 'APPEND_ENDING'; text: string; imageUrl?: string }
   | { type: 'SET_AI_QUESTION'; text: string }
   | { type: 'FINISH_TURN'; turnNumber: number; isEnding: boolean }
-  | { type: 'RESTORE_MESSAGES'; messages: ChatMessage[]; turnNumber: number }
+  | { type: 'RESTORE_MESSAGES'; messages: ChatMessage[]; turnNumber: number; isEnding: boolean }
   | { type: 'SHOW_SAFETY_NOTICE'; message: string; level: string }
   | { type: 'DISMISS_SAFETY_NOTICE' }
   | { type: 'RESET' };
@@ -117,6 +118,17 @@ function turnReducer(state: TurnState, action: TurnAction): TurnState {
       return { ...state, messages: [...msgs, endMsg], isStreaming: false };
     }
 
+    case 'SET_AI_IMAGE': {
+      const messages = [...state.messages];
+      for (let index = messages.length - 1; index >= 0; index -= 1) {
+        if (messages[index].role === 'ai') {
+          messages[index] = { ...messages[index], imageUrl: action.imageUrl };
+          break;
+        }
+      }
+      return { ...state, messages };
+    }
+
     case 'SET_AI_QUESTION': {
       const msgs = [...state.messages];
       const lastIdx = msgs.length - 1;
@@ -136,6 +148,11 @@ function turnReducer(state: TurnState, action: TurnAction): TurnState {
     case 'FINISH_TURN':
       return {
         ...state,
+        messages: state.messages.map((message) =>
+          message.role === 'ai' && message.isStreaming
+            ? { ...message, isStreaming: false }
+            : message,
+        ),
         isStreaming: false,
         turnNumber: action.turnNumber,
         isEnding: action.isEnding,
@@ -158,6 +175,7 @@ function turnReducer(state: TurnState, action: TurnAction): TurnState {
         ...state,
         messages: action.messages,
         turnNumber: action.turnNumber,
+        isEnding: action.isEnding,
       };
 
     case 'RESET':

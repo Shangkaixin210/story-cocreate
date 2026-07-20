@@ -37,7 +37,8 @@
   color: var(--color-text-light);
 }
 
-.header-logout {
+.header-logout,
+.header-channel {
   font-size: var(--font-size-xs);
   color: var(--color-text-light);
   background: #F5F0E8;
@@ -45,7 +46,8 @@
   border-radius: var(--radius-button);
 }
 
-.header-logout:hover {
+.header-logout:hover,
+.header-channel:hover {
   background: #E8DDD0;
   color: var(--color-text);
 }

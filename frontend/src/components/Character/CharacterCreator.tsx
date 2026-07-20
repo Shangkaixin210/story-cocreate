@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Button from '../Shared/Button';
+import { useAuth } from '../../contexts/AuthContext';
 import { AVATAR_EMOJI, AVATAR_LABELS } from './CharacterCard';
 import './CharacterCreator.css';
 
@@ -8,17 +9,17 @@ const COLORS = ['#FF6B6B', '#FF8C42', '#FFD93D', '#6BCB77', '#4D96FF', '#9B59B6'
 const CUSTOM_AVATAR_KEY = '__custom__';
 
 interface CharacterCreatorProps {
-  onCreate: (data: { nickname: string; avatar_type: string; avatar_color: string; personality?: string; age_group?: string }) => Promise<void>;
+  onCreate: (data: { nickname: string; avatar_type: string; avatar_color: string; personality?: string; age_group: '4-7' | '8-12' }) => Promise<void>;
 }
 
 export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
+  const { user } = useAuth();
   const [nickname, setNickname] = useState('');
   const [avatarType, setAvatarType] = useState(AVATAR_TYPES[0]);
   const [customAvatarType, setCustomAvatarType] = useState('');
   const [isCustomAvatar, setIsCustomAvatar] = useState(false);
   const [avatarColor, setAvatarColor] = useState(COLORS[0]);
   const [personality, setPersonality] = useState('');
-  const [ageGroup, setAgeGroup] = useState('8-12');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -43,6 +44,10 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
       setError('给你的角色取个名字吧！');
       return;
     }
+    if (user?.age_group !== '4-7' && user?.age_group !== '8-12') {
+      setError('请先选择 4-7 岁或 8-12 岁创作通道');
+      return;
+    }
     if (isCustomAvatar && !customAvatarType.trim()) {
       setError('请填写自定义形象哦~');
       return;
@@ -54,7 +59,7 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
         avatar_type: getEffectiveAvatarType(),
         avatar_color: avatarColor,
         personality: personality.trim() || undefined,
-        age_group: ageGroup,
+        age_group: user.age_group,
       });
       setNickname('');
     } catch (err: unknown) {
@@ -67,13 +72,6 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
   return (
     <form className="character-creator" onSubmit={handleSubmit}>
       <h3 className="creator-title">创建一个新角色 🎨</h3>
-
-      {/* Age group — compact toggle */}
-      <div className="channel-toggle">
-        <span className="channel-toggle-label">🎯</span>
-        <button type="button" className={`channel-toggle-btn ${ageGroup === '4-7' ? 'channel-toggle-young' : ''}`} onClick={() => setAgeGroup('4-7')}>🧒 4-7岁</button>
-        <button type="button" className={`channel-toggle-btn ${ageGroup === '8-12' ? 'channel-toggle-older' : ''}`} onClick={() => setAgeGroup('8-12')}>🧑 8-12岁</button>
-      </div>
 
       <div className="creator-field">
         <label>角色昵称</label>

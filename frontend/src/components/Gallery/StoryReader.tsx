@@ -7,6 +7,16 @@ interface StoryReaderProps {
   storyId: number;
 }
 
+function extractImageUrls(msg: StoryMessage): string[] {
+  if (!msg.ai_raw_response) return [];
+  try {
+    const raw = JSON.parse(msg.ai_raw_response);
+    return raw.image_urls || [];
+  } catch {
+    return [];
+  }
+}
+
 export default function StoryReader({ storyId }: StoryReaderProps) {
   const [messages, setMessages] = useState<StoryMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,16 +35,24 @@ export default function StoryReader({ storyId }: StoryReaderProps) {
 
   return (
     <div className="story-reader">
-      {messages.map((msg) => (
-        <div key={msg.id} className={`reader-message reader-message-${msg.role}`}>
-          <div className="reader-role-icon">
-            {msg.role === 'ai' ? '🎬' : '🧒'}
+      {messages.map((msg) => {
+        const imageUrls = msg.role === 'ai' ? extractImageUrls(msg) : [];
+        return (
+          <div key={msg.id} className={`reader-message reader-message-${msg.role}`}>
+            <div className="reader-role-icon">
+              {msg.role === 'ai' ? '🎬' : '🧒'}
+            </div>
+            <div className="reader-content">
+              <p>{msg.content}</p>
+              {imageUrls.map((url, i) => (
+                <div key={i} className="reader-image">
+                  <img src={url} alt={`故事插图 ${i + 1}`} loading="lazy" />
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="reader-content">
-            <p>{msg.content}</p>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

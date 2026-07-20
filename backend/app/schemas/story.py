@@ -39,3 +39,4 @@ class StoryOut(BaseModel):
 
 class TurnRequest(BaseModel):
     child_input: str
+    force_ending: bool = False

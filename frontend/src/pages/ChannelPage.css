@@ -1,0 +1,48 @@
+.channel-page {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #FFF8F0, #E8F4FD);
+}
+
+.channel-card {
+  background: white; border-radius: var(--radius-card);
+  padding: 40px 32px; max-width: 520px; width: 100%;
+  text-align: center; box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+}
+
+.channel-hero-emoji { font-size: 64px; }
+.channel-hero-title { font-size: var(--font-size-xl); color: var(--color-primary); }
+.channel-hero-desc { font-size: var(--font-size-sm); color: var(--color-text-light); max-width: 380px; line-height: 1.6; }
+
+.channel-options { display: flex; gap: 12px; width: 100%; }
+
+.channel-option {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 24px 16px; border-radius: var(--radius-card);
+  background: #FAF8F4; border: 3px solid #E0D5C7;
+  font-family: var(--font-family); transition: all var(--transition-fast);
+}
+.channel-option:hover { border-color: #ccc; transform: translateY(-2px); }
+
+.channel-option.selected { border-width: 3px; }
+.channel-option.selected.young { border-color: #6BCB77; background: #F0FFF0; box-shadow: 0 0 0 6px rgba(107,203,119,0.12); }
+.channel-option.selected.older { border-color: #4D96FF; background: #F0F5FF; box-shadow: 0 0 0 6px rgba(77,150,255,0.12); }
+
+.channel-option-emoji { font-size: 40px; }
+.channel-option-label { font-size: var(--font-size-body); font-weight: 700; color: var(--color-text); }
+.channel-option-age { font-size: var(--font-size-sm); color: var(--color-text-light); font-weight: 700; }
+.channel-option-desc { font-size: 12px; color: #999; line-height: 1.6; }
+
+.channel-confirm-btn {
+  width: 100%; padding: 14px; border-radius: var(--radius-button);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: white; font-size: var(--font-size-body); font-weight: 700;
+  font-family: var(--font-family); border: none; cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.channel-confirm-btn:hover:not(:disabled) { transform: scale(1.02); box-shadow: var(--shadow-md); }
+.channel-confirm-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.channel-hint { font-size: 11px; color: #ccc; }

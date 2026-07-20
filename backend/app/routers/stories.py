@@ -3,7 +3,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_user
@@ -49,10 +49,23 @@ async def create_story(
     if not char or char.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="角色不存在")
 
+    title = req.title.strip() if req.title else None
+    if title:
+        duplicate = await db.execute(
+            select(Story.id)
+            .join(Character)
+            .where(
+                Character.user_id == current_user.id,
+                func.lower(Story.title) == title.lower(),
+            )
+        )
+        if duplicate.first() is not None:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="故事名字已经存在，请换一个名字")
+
     story = Story(
         character_id=req.character_id,
         theme=req.theme,
-        title=req.title,
+        title=title,
     )
     db.add(story)
     await db.commit()
@@ -79,7 +92,20 @@ async def update_story(
 ):
     story = await _get_user_story(story_id, current_user, db)
     if req.title is not None:
-        story.title = req.title
+        title = req.title.strip()
+        if title:
+            duplicate = await db.execute(
+                select(Story.id)
+                .join(Character)
+                .where(
+                    Character.user_id == current_user.id,
+                    Story.id != story_id,
+                    func.lower(Story.title) == title.lower(),
+                )
+            )
+            if duplicate.first() is not None:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="故事名字已经存在，请换一个名字")
+        story.title = title or None
     if req.status is not None:
         story.status = req.status
         if req.status == "completed":
@@ -165,7 +191,8 @@ async def story_turn(
         narrative_parts = []
         question_text = ""
         observation_data = None
-        ai_ending = False  # True when LLM sends ending event
+        ai_ending = False
+        image_urls: list[str] = []  # Collect for storage
 
         # Emit safety notice if triggered
         if safety_result and safety_result.is_flagged:
@@ -179,7 +206,7 @@ async def story_turn(
                 personality=char.personality or "" if char else "",
                 theme=story.theme or "",
                 is_first_turn=is_first_turn,
-                age_group=char.age_group or "8-12" if char else "8-12",
+                age_group=current_user.age_group or "8-12",
             ):
                 if chunk["type"] == "narrative_chunk":
                     narrative_parts.append(chunk["text"])
@@ -191,7 +218,9 @@ async def story_turn(
                         img_prompt = generate_image_prompt_from_narrative(chunk["text"])
                     if img_prompt:
                         from app.services.image_service import generate_image_url
-                        data["image_url"] = generate_image_url(img_prompt)
+                        img_url = generate_image_url(img_prompt)
+                        data["image_url"] = img_url
+                        image_urls.append(img_url)
                     yield f"event: narrative_chunk\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
                 elif chunk["type"] == "ending":
@@ -200,7 +229,9 @@ async def story_turn(
                     data = {"text": chunk["text"]}
                     from app.services.image_service import generate_image_prompt_from_narrative, generate_image_url
                     img_prompt = generate_image_prompt_from_narrative(chunk["text"])
-                    data["image_url"] = generate_image_url(img_prompt)
+                    ending_image_url = generate_image_url(img_prompt)
+                    data["image_url"] = ending_image_url
+                    image_urls.append(ending_image_url)
                     yield f"event: ending\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
                 elif chunk["type"] == "question":
@@ -217,6 +248,16 @@ async def story_turn(
                 elif chunk["type"] == "done":
                     narrative = "".join(narrative_parts)
 
+                    # Always keep at least one illustration for a non-empty AI turn.
+                    # The URL is emitted to the live view and persisted for refresh/gallery.
+                    if narrative and not image_urls:
+                        from app.services.image_service import generate_image_prompt_from_narrative, generate_image_url
+                        fallback_prompt = generate_image_prompt_from_narrative(narrative)
+                        fallback_image_url = generate_image_url(fallback_prompt)
+                        if fallback_image_url:
+                            image_urls.append(fallback_image_url)
+                            yield f"event: illustration\ndata: {json.dumps({'image_url': fallback_image_url}, ensure_ascii=False)}\n\n"
+
                     # 4. Save AI message
                     ai_msg = await story_service.save_ai_message(
                         db, story_id, turn_number, narrative, question_text,
@@ -224,14 +265,18 @@ async def story_turn(
                             "narrative": narrative,
                             "question": question_text,
                             "observation": observation_data,
+                            "image_urls": image_urls,
                         }, ensure_ascii=False),
                     )
 
-                    # 5. Save observation
-                    # If LLM didn't provide observation, compute one programmatically
-                    if not observation_data and child_msg and req.child_input and req.child_input.strip():
-                        from app.services.llm_service import compute_observation
-                        observation_data = compute_observation(req.child_input, char.age_group or "")
+                    # 5. Call Talent Evaluator Agent (separate from Story Director)
+                    if child_msg and req.child_input and req.child_input.strip():
+                        age = current_user.age_group or "8-12"
+                        try:
+                            observation_data = await llm.evaluate_turn(req.child_input, age)
+                        except Exception:
+                            from app.services.llm_service import compute_observation
+                            observation_data = compute_observation(req.child_input, age)
 
                     if observation_data and child_msg:
                         await observation_service.save_observation(
@@ -244,7 +289,7 @@ async def story_turn(
                     )
 
                     # 7. Check if story should end: AI decides, soft cap at max_turns
-                    is_ending = ai_ending or (turn_number >= settings.max_turns)
+                    is_ending = req.force_ending or ai_ending or (turn_number >= settings.max_turns)
                     if is_ending:
                         await db.execute(
                             update(Story).where(Story.id == story_id).values(

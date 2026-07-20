@@ -9,6 +9,7 @@ class StoryMessageOut(BaseModel):
     turn_number: int
     role: str
     content: str
+    ai_raw_response: str | None = None
     created_at: str | None = None
 
     @field_validator("created_at", mode="before")

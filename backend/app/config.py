@@ -1,9 +1,15 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
+
+
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+PROJECT_DIR = BACKEND_DIR.parent
 
 
 class Settings(BaseSettings):
     # Database
-    database_url: str = "sqlite+aiosqlite:///./story_cocreate.db"
+    database_url: str = f"sqlite+aiosqlite:///{(PROJECT_DIR / 'story_cocreate.db').as_posix()}"
 
     # LLM (DeepSeek)
     llm_api_key: str = ""
@@ -21,7 +27,8 @@ class Settings(BaseSettings):
     # App
     debug: bool = True
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    # Resolve the env file from the source tree, not the process working directory.
+    model_config = {"env_file": str(BACKEND_DIR / ".env"), "env_file_encoding": "utf-8"}
 
 
 settings = Settings()

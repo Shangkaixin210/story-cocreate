@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from typing import Literal
+
 from pydantic import BaseModel, field_validator
 
 
@@ -8,7 +10,11 @@ class CharacterCreate(BaseModel):
     avatar_type: str
     avatar_color: str
     personality: str | None = None
-    age_group: str | None = None  # "4-7" or "8-12"
+    age_group: Literal["4-7", "8-12"]
+
+
+class CharacterUpdate(BaseModel):
+    age_group: Literal["4-7", "8-12"]
 
 
 class CharacterOut(BaseModel):

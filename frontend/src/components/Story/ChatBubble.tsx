@@ -64,7 +64,7 @@ export default function ChatBubble({ role, content, isStreaming, isQuestion, ima
     }
   };
 
-  if (!displayContent && !imageUrl) return null;
+  if (!content && !imageUrl) return null;
 
   return (
     <div className={cls}>
@@ -81,7 +81,7 @@ export default function ChatBubble({ role, content, isStreaming, isQuestion, ima
         )}
 
         {/* TTS button for AI messages */}
-        {role === 'ai' && displayContent && !isStreaming && (
+        {role === 'ai' && content && !isStreaming && (
           <button
             className={`tts-btn ${speaking ? 'tts-btn-active' : ''}`}
             onClick={handleTTS}

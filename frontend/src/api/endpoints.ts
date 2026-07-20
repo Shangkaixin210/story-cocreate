@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch, BASE_URL, getToken } from './client';
 
 // ── Types ──
 
@@ -6,12 +6,14 @@ export interface User {
   id: number;
   username: string;
   display_name: string | null;
+  age_group: string | null;
   created_at: string | null;
 }
 
 export interface AuthResponse {
   token: string;
   user: User;
+  show_onboarding: boolean;
 }
 
 export interface Character {
@@ -45,6 +47,7 @@ export interface StoryMessage {
   turn_number: number;
   role: 'ai' | 'child';
   content: string;
+  ai_raw_response?: string | null;
   created_at: string | null;
 }
 
@@ -99,9 +102,16 @@ export function listCharacters() {
   return apiFetch<Character[]>('/characters');
 }
 
-export function createCharacter(data: { nickname: string; avatar_type: string; avatar_color: string; personality?: string; age_group?: string }) {
+export function createCharacter(data: { nickname: string; avatar_type: string; avatar_color: string; personality?: string; age_group: '4-7' | '8-12' }) {
   return apiFetch<Character>('/characters', {
     method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateCharacter(id: number, data: { age_group: '4-7' | '8-12' }) {
+  return apiFetch<Character>(`/characters/${id}`, {
+    method: 'PATCH',
     body: JSON.stringify(data),
   });
 }
@@ -152,15 +162,16 @@ export function sendStoryTurn(
   storyId: number,
   childInput: string,
   signal?: AbortSignal,
+  forceEnding = false,
 ): Promise<Response> {
-  const token = localStorage.getItem('auth_token');
-  return fetch(`/api/v1/stories/${storyId}/turn`, {
+  const token = getToken();
+  return fetch(`${BASE_URL}/stories/${storyId}/turn`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ child_input: childInput }),
+    body: JSON.stringify({ child_input: childInput, force_ending: forceEnding }),
     signal,
   });
 }

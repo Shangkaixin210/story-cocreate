@@ -6,7 +6,7 @@ from app.auth import get_current_user
 from app.database import get_db
 from app.models.character import Character
 from app.models.user import User
-from app.schemas.character import CharacterCreate, CharacterOut
+from app.schemas.character import CharacterCreate, CharacterOut, CharacterUpdate
 
 router = APIRouter(prefix="/characters", tags=["characters"])
 
@@ -51,6 +51,22 @@ async def get_character(
     char = await db.get(Character, character_id)
     if not char or char.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="角色不存在")
+    return char
+
+
+@router.patch("/{character_id}", response_model=CharacterOut)
+async def update_character(
+    character_id: int,
+    req: CharacterUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    char = await db.get(Character, character_id)
+    if not char or char.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="角色不存在")
+    char.age_group = req.age_group
+    await db.commit()
+    await db.refresh(char)
     return char
 
 

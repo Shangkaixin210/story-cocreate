@@ -29,6 +29,11 @@ export default function LoginPage() {
       const result = isRegister
         ? await register(username.trim(), password.trim(), displayName.trim() || undefined)
         : await login(username.trim(), password.trim());
+      if (result.show_onboarding) {
+        sessionStorage.setItem('ai_bole_show_onboarding', 'true');
+      } else {
+        sessionStorage.removeItem('ai_bole_show_onboarding');
+      }
       authLogin(result.token, result.user);
       navigate('/');
     } catch (err: unknown) {
@@ -58,7 +63,7 @@ export default function LoginPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="取一个酷酷的名字"
+              placeholder="输入你的用户名"
               maxLength={20}
             />
           </div>

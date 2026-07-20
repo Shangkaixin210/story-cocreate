@@ -38,6 +38,20 @@
   background: var(--color-bubble-child);
 }
 
+.reader-image {
+  margin-top: 10px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  max-width: 300px;
+}
+.reader-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
 .reader-error {
   text-align: center;
   color: var(--color-danger);

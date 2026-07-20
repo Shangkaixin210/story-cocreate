@@ -18,6 +18,7 @@ class UserOut(BaseModel):
     id: int
     username: str
     display_name: str | None = None
+    age_group: str | None = None
     created_at: str | None = None
 
     @field_validator("created_at", mode="before")
@@ -33,3 +34,4 @@ class UserOut(BaseModel):
 class AuthResponse(BaseModel):
     token: str
     user: UserOut
+    show_onboarding: bool = False

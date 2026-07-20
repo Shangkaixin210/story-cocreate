@@ -25,8 +25,13 @@ async def init_db():
     # Auto-migrate: add new columns for schema upgrades
     async with engine.connect() as conn:
         migrations = [
+            "ALTER TABLE users ADD COLUMN age_group VARCHAR(10)",
+            "ALTER TABLE users ADD COLUMN has_seen_onboarding BOOLEAN DEFAULT 0",
+
             "ALTER TABLE characters ADD COLUMN personality TEXT",
             "ALTER TABLE characters ADD COLUMN age_group VARCHAR(10)",
+            "ALTER TABLE users ADD COLUMN has_seen_onboarding BOOLEAN NOT NULL DEFAULT 0",
+            "UPDATE users SET has_seen_onboarding = 1 WHERE has_seen_onboarding = 0",
             "ALTER TABLE observations ADD COLUMN vocabulary_semantic INTEGER",
             "ALTER TABLE observations ADD COLUMN vocabulary_semantic_examples TEXT",
             "ALTER TABLE observations ADD COLUMN sentence_fluency INTEGER",
