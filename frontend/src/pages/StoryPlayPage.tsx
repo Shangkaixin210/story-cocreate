@@ -96,6 +96,7 @@ export default function StoryPlayPage() {
   const [showEndModal, setShowEndModal] = useState(false);
   const [childEnding, setChildEnding] = useState('');
   const [storyTitle, setStoryTitleState] = useState('');
+  const [showPinyin, setShowPinyin] = useState(false);
 
   async function handleAIEnding() {
     if (!id) return;
@@ -136,6 +137,15 @@ export default function StoryPlayPage() {
           placeholder="未命名故事"
           maxLength={30}
         />
+        <button
+          type="button"
+          className={`pinyin-toggle ${showPinyin ? 'pinyin-on' : ''}`}
+          onClick={() => setShowPinyin((current) => !current)}
+          title={showPinyin ? '隐藏拼音' : '显示拼音'}
+          aria-pressed={showPinyin}
+        >
+          拼
+        </button>
       </div>
 
       {/* Safety notice banner */}
@@ -166,6 +176,7 @@ export default function StoryPlayPage() {
             isQuestion={msg.isQuestion}
             imageUrl={msg.imageUrl}
             isEnding={msg.isEnding}
+            showPinyin={showPinyin}
           />
         ))}
 

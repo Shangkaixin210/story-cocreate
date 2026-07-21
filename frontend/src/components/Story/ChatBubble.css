@@ -48,6 +48,14 @@
   color: var(--color-text);
   white-space: pre-wrap;
   word-break: break-word;
+  line-height: 2.2;
+}
+
+.chat-bubble-text ruby { ruby-align: center; }
+.chat-bubble-text rt {
+  font-size: 0.48em;
+  color: var(--color-text-light);
+  line-height: 1;
 }
 
 .chat-bubble-question .chat-bubble-content {

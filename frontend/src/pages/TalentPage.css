@@ -89,6 +89,7 @@
   padding: 8px 14px; background: #FAF6F0; border-radius: var(--radius-sm);
   margin-bottom: 6px; font-size: var(--font-size-xs); color: var(--color-text); line-height: 1.5;
 }
+.talent-hl-tags { margin-right: 6px; }
 
 /* Feedback */
 .talent-feedback { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }

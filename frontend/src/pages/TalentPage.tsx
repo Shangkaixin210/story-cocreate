@@ -145,15 +145,30 @@ export default function TalentPage() {
         </div>
       )}
 
-      {/* Highlights */}
-      {(profile.semantic_highlights.length > 0 || profile.empathy_highlights.length > 0 || profile.initiative_highlights.length > 0) && (
-        <div className="talent-highlights animate-slide-up">
-          <h2>✏️ 精彩瞬间</h2>
-          {profile.semantic_highlights.map((h, i) => <div key={`s-${i}`} className="talent-hl-item">📝 {h}</div>)}
-          {profile.empathy_highlights.map((h, i) => <div key={`e-${i}`} className="talent-hl-item">🎭 {h}</div>)}
-          {profile.initiative_highlights.map((h, i) => <div key={`i-${i}`} className="talent-hl-item">🚀 {h}</div>)}
-        </div>
-      )}
+      {/* Highlights — deduplicated across categories */}
+      {(() => {
+        const seen = new Set<string>();
+        const items: { text: string; tags: string[] }[] = [];
+        const add = (text: string, tag: string) => {
+          if (!text) return;
+          const exist = items.find(it => it.text === text);
+          if (exist) { if (!exist.tags.includes(tag)) exist.tags.push(tag); }
+          else if (!seen.has(text)) { seen.add(text); items.push({ text, tags: [tag] }); }
+        };
+        profile.semantic_highlights.forEach(h => add(h, '📝'));
+        profile.empathy_highlights.forEach(h => add(h, '🎭'));
+        profile.initiative_highlights.forEach(h => add(h, '🚀'));
+        return items.length > 0 ? (
+          <div className="talent-highlights animate-slide-up">
+            <h2>✏️ 精彩瞬间</h2>
+            {items.map((item, i) => (
+              <div key={i} className="talent-hl-item">
+                <span className="talent-hl-tags">{item.tags.join(' ')}</span> {item.text}
+              </div>
+            ))}
+          </div>
+        ) : null;
+      })()}
 
       {/* Feedback */}
       <div className="talent-feedback animate-slide-up">

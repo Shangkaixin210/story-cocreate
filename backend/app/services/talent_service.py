@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.observation import Observation
+from app.models.message import StoryMessage
 from app.models.story import Story
 
 
@@ -96,6 +97,11 @@ def _compute_trend(scores: list[int]) -> str:
     else: return "稳定 ➡️"
 
 
+def _is_system_ending_request(text: str) -> bool:
+    normalized = "".join(text.split())
+    return "请从刚才的情节继续" in normalized and "完整的大结局" in normalized
+
+
 async def generate_talent_profile(db: AsyncSession, story_id: int) -> LanguageTalentProfile | None:
     story = await db.get(Story, story_id)
     if not story:
@@ -107,6 +113,17 @@ async def generate_talent_profile(db: AsyncSession, story_id: int) -> LanguageTa
         .order_by(Observation.turn_number)
     )
     obs_list = result.scalars().all()
+
+    # Observations must be backed by genuine child messages. Older versions
+    # accidentally saved the UI's "write the ending" command as child input.
+    msg_result = await db.execute(
+        select(StoryMessage)
+        .where(StoryMessage.story_id == story_id, StoryMessage.role == "child")
+    )
+    all_child_msgs = msg_result.scalars().all()
+    child_msgs = [m for m in all_child_msgs if not _is_system_ending_request(m.content)]
+    child_by_id = {message.id: message for message in child_msgs}
+    obs_list = [observation for observation in obs_list if observation.message_id in child_by_id]
 
     # Get age_group from character
     from app.models.character import Character
@@ -173,22 +190,28 @@ async def generate_talent_profile(db: AsyncSession, story_id: int) -> LanguageTa
     if not tags: tags.append("语言探索者")
     p.talent_tags = tags
 
+    # Highlights must quote the child and must never display evaluator-generated
+    # prose or the story director's writing.
+    def child_quote(observation: Observation) -> str:
+        message = child_by_id.get(observation.message_id)
+        if not message or not message.content.strip():
+            return ""
+        text = " ".join(message.content.split())
+        return f"“{text[:100]}{'…' if len(text) > 100 else ''}”"
+
     # ── Highlights ──
     for o in obs_list:
-        if o.vocabulary_semantic_examples and o.vocabulary_semantic_examples.strip():
-            p.semantic_highlights.append(o.vocabulary_semantic_examples.strip())
-        if o.character_empathy_examples and o.character_empathy_examples.strip():
-            p.empathy_highlights.append(o.character_empathy_examples.strip())
-        if o.creative_initiative_examples and o.creative_initiative_examples.strip():
-            p.initiative_highlights.append(o.creative_initiative_examples.strip())
+        quote = child_quote(o)
+        if not quote:
+            continue
+        if (o.vocabulary_semantic or 0) >= 3 and quote not in p.semantic_highlights:
+            p.semantic_highlights.append(quote)
+        if (o.character_empathy or 0) >= 3 and quote not in p.empathy_highlights:
+            p.empathy_highlights.append(quote)
+        if (o.creative_initiative or 0) >= 3 and quote not in p.initiative_highlights:
+            p.initiative_highlights.append(quote)
 
     # ── Word count ──
-    from app.models.message import StoryMessage
-    msg_result = await db.execute(
-        select(StoryMessage)
-        .where(StoryMessage.story_id == story_id, StoryMessage.role == "child")
-    )
-    child_msgs = msg_result.scalars().all()
     p.total_words = sum(len(m.content) for m in child_msgs)
     p.avg_words_per_turn = round(p.total_words / len(child_msgs), 1) if child_msgs else 0.0
 

@@ -166,7 +166,7 @@ async def story_turn(
 
     # 1. Save child message (skip for first turn — AI initiates)
     child_msg = None
-    if not is_first_turn:
+    if not is_first_turn and not req.force_ending:
         child_msg = await story_service.save_child_message(db, story_id, turn_number, req.child_input)
 
     # 2. Build message history

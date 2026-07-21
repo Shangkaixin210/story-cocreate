@@ -35,6 +35,25 @@
   outline: 2px solid var(--color-primary-light);
 }
 
+.pinyin-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-round);
+  background: #F5F0E8;
+  border: 2px solid #E0D5C7;
+  color: var(--color-text-light);
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pinyin-toggle:hover { border-color: var(--color-primary); }
+.pinyin-toggle.pinyin-on {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
 /* Safety banner */
 .safety-banner {
   display: flex;

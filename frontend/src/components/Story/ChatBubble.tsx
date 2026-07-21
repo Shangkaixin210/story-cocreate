@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useTTS } from '../../hooks/useTTS';
 import WordLookup from './WordLookup';
+import PinyinText from './PinyinText';
 import './ChatBubble.css';
 
 interface ChatBubbleProps {
@@ -10,6 +11,7 @@ interface ChatBubbleProps {
   isQuestion?: boolean;
   imageUrl?: string;
   isEnding?: boolean;
+  showPinyin?: boolean;
 }
 
 function sanitizeContent(text: string): string {
@@ -26,7 +28,7 @@ interface LookupState {
   y: number;
 }
 
-export default function ChatBubble({ role, content, isStreaming, isQuestion, imageUrl, isEnding }: ChatBubbleProps) {
+export default function ChatBubble({ role, content, isStreaming, isQuestion, imageUrl, isEnding, showPinyin }: ChatBubbleProps) {
   const { speak, stop, speaking } = useTTS();
   const [lookup, setLookup] = useState<LookupState | null>(null);
 
@@ -74,7 +76,7 @@ export default function ChatBubble({ role, content, isStreaming, isQuestion, ima
       <div className="chat-bubble-content">
         {displayContent && (
           <p className="chat-bubble-text" onMouseUp={handleTextSelect}>
-            {displayContent}
+            <PinyinText text={displayContent} enabled={role === 'ai' && Boolean(showPinyin)} />
             {isStreaming && <span className="cursor-blink">|</span>}
             {isEnding && <span className="ending-badge">🎉 故事完结</span>}
           </p>
