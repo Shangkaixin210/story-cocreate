@@ -171,18 +171,24 @@ async def story_turn(
 
     # 2. Build message history
     messages = await story_service.get_story_messages(db, story_id)
+    # 3. Content safety & engagement checks (before LLM call)
+    from app.services.content_guard import check_content, check_engagement
+    safety_result = None
+    engagement_hint = ""
+    if req.child_input and req.child_input.strip():
+        safety_result = check_content(req.child_input)
+        engagement = check_engagement(req.child_input)
+        if engagement.issue_type != "OK":
+            engagement_hint = engagement.prompt_hint
+
     if not is_first_turn:
-        messages.append({"role": "user", "content": req.child_input})
+        content = req.child_input
+        if engagement_hint:
+            content = f"{req.child_input}\n\n[系统提示：{engagement_hint}]"
+        messages.append({"role": "user", "content": content})
     else:
         # First turn: add a system-level trigger for the AI to start
         messages.append({"role": "user", "content": "请开始我们的故事吧！"})
-
-    # 3. Content safety check (before LLM call, for instant feedback)
-    from app.services.content_guard import check_content
-    safety_result = None
-    if req.child_input and req.child_input.strip():
-        safety_result = check_content(req.child_input)
-
     # 4. LLM service with character + personality context
     llm = get_llm_service()
 

@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.database import init_db
-from app.routers import auth, characters, dictionary, observations, stories, talents
+from app.routers import auth, characters, dictionary, observations, stories, talents, tts
 
 
 @asynccontextmanager
@@ -61,6 +61,7 @@ app.include_router(stories.router, prefix="/api/v1")
 app.include_router(observations.router, prefix="/api/v1")
 app.include_router(talents.router, prefix="/api/v1")
 app.include_router(dictionary.router, prefix="/api/v1")
+app.include_router(tts.router, prefix="/api/v1")
 
 
 @app.get("/api/health")

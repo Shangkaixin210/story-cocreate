@@ -43,6 +43,61 @@ SAFE_PHRASES = {
 }
 
 
+# ── Engagement signals for child interaction exceptions ──
+
+STUCK_KEYWORDS = {"不知道", "不会", "不知道写什么", "想不到", "没想好", "随便", "都行", "嗯", "哦", "好", "行", "可以", "还行"}
+OFF_TOPIC_KEYWORDS = {"游戏", "手机", "零食", "作业", "考试", "分数", "老师批评", "同学欺负", "动画片", "玩具", "奥特曼", "王者荣耀", "吃鸡"}
+WANT_TO_STOP_KEYWORDS = {"不想写了", "不想玩了", "好累", "累了", "没意思", "不好玩", "写不动", "不玩了", "结束吧", "算了吧", "不要了"}
+
+@dataclass
+class EngagementResult:
+    issue_type: str   # "stuck" | "off_topic" | "want_to_stop" | "OK"
+    prompt_hint: str  # Extra instruction to inject into the system prompt
+
+
+def check_engagement(text: str) -> EngagementResult:
+    """Detect if the child is stuck, off-topic, or wants to stop.
+
+    Returns EngagementResult with hints for the story director.
+    """
+    if not text or not text.strip():
+        return EngagementResult(issue_type="OK", prompt_hint="")
+
+    normalized = text.strip()
+
+    # 1. Want to stop?
+    for kw in WANT_TO_STOP_KEYWORDS:
+        if kw in normalized:
+            return EngagementResult(
+                issue_type="want_to_stop",
+                prompt_hint="孩子表达了不想继续的情绪。请用温暖的方式回应：先共情,然后给故事一个简短而温暖的结局,使用ending事件收尾。不要追问。",
+            )
+
+    # 2. Stuck / can't think?
+    word_count = len(normalized.replace(" ", ""))
+    if word_count <= 3:
+        return EngagementResult(
+            issue_type="stuck",
+            prompt_hint='孩子似乎卡住了，回答很短。请给出1-2个具体的续写方向供TA选择，鼓励TA大胆想。不要只说再想想。',
+        )
+    for kw in STUCK_KEYWORDS:
+        if kw == normalized or (kw in normalized and word_count <= 5):
+            return EngagementResult(
+                issue_type="stuck",
+                prompt_hint="孩子的回答很短或表示不知道。请给出2个具体有趣的续写建议让TA选，降低创作压力。先肯定TA之前的贡献再引导。",
+            )
+
+    # 3. Off-topic?
+    for kw in OFF_TOPIC_KEYWORDS:
+        if kw in normalized:
+            return EngagementResult(
+                issue_type="off_topic",
+                prompt_hint='孩子聊到了和故事无关的话题。请用轻松幽默的方式把注意力拉回故事，在下一段叙事中自然地衔接回故事主线。',
+            )
+
+    return EngagementResult(issue_type="OK", prompt_hint="")
+
+
 @dataclass
 class SafetyResult:
     is_flagged: bool

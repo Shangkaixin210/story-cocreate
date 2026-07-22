@@ -185,3 +185,18 @@ export function getObservations(storyId: number) {
 export function getObservationSummary(storyId: number) {
   return apiFetch<ObservationSummary>(`/observations/summary/${storyId}`);
 }
+
+export async function synthesizeSpeech(text: string, signal?: AbortSignal): Promise<Blob> {
+  const token = getToken();
+  const response = await fetch(`${BASE_URL}/tts`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ text }),
+    signal,
+  });
+  if (!response.ok) throw new Error(`Cloud TTS failed (${response.status})`);
+  return response.blob();
+}
