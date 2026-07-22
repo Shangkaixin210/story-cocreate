@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { StoryProvider } from './contexts/StoryContext';
 import Header from './components/Layout/Header';
 import Background from './components/Layout/Background';
+import MusicPlayer from './components/Layout/MusicPlayer';
 import Loading from './components/Shared/Loading';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
@@ -101,6 +102,7 @@ export default function App() {
       <AuthProvider>
         <Background />
         <Header />
+        <MusicPlayer />
         <AppRoutes />
       </AuthProvider>
     </BrowserRouter>

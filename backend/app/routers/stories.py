@@ -28,7 +28,10 @@ async def list_stories(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    query = select(Story).join(Character).where(Character.user_id == current_user.id)
+    query = select(Story).join(Character).where(
+        Character.user_id == current_user.id,
+        Story.is_deleted == False,
+    )
     if character_id:
         query = query.where(Story.character_id == character_id)
     if status:
@@ -121,9 +124,26 @@ async def delete_story(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    """Soft-delete: marks story as deleted but preserves data for parent/teacher review."""
     story = await _get_user_story(story_id, current_user, db)
-    await db.delete(story)
+    story.is_deleted = True
     await db.commit()
+
+
+@router.get("/parent/all", response_model=list[StoryOut])
+async def list_all_stories(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Parent/teacher view: shows ALL stories including deleted ones."""
+    query = (
+        select(Story)
+        .join(Character)
+        .where(Character.user_id == current_user.id)
+        .order_by(Story.updated_at.desc())
+    )
+    result = await db.execute(query)
+    return result.scalars().all()
 
 
 @router.get("/{story_id}/messages", response_model=list[StoryMessageOut])

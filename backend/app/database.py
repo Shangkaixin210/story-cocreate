@@ -42,6 +42,7 @@ async def init_db():
             "ALTER TABLE observations ADD COLUMN character_empathy_examples TEXT",
             "ALTER TABLE observations ADD COLUMN creative_initiative INTEGER",
             "ALTER TABLE observations ADD COLUMN creative_initiative_examples TEXT",
+            "ALTER TABLE stories ADD COLUMN is_deleted BOOLEAN DEFAULT 0",
         ]
         for sql in migrations:
             try:

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, func, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, func, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -16,6 +16,7 @@ class Story(Base):
     status: Mapped[str] = mapped_column(String(20), default="active", server_default="active")
     turn_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     full_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     started_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

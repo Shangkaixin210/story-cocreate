@@ -56,23 +56,6 @@ export default function HomePage() {
         </Button>
       </div>
 
-      <div className="home-features">
-        <div className="home-feature">
-          <span>🎬</span>
-          <h3>AI 故事导演</h3>
-          <p>专业的故事导演陪你一起创作</p>
-        </div>
-        <div className="home-feature">
-          <span>🎨</span>
-          <h3>自由创作</h3>
-          <p>你想怎么编就怎么编，没有标准答案</p>
-        </div>
-        <div className="home-feature">
-          <span>📖</span>
-          <h3>专属故事书</h3>
-          <p>每个故事都会被保存，成为你的专属故事书</p>
-        </div>
-      </div>
     </div>
   );
 }

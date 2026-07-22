@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listStories, deleteStory, updateStory, type Story } from '../api/endpoints';
+import { apiFetch } from '../api/client';
 import StoryCard from '../components/Gallery/StoryCard';
 import StoryReader from '../components/Gallery/StoryReader';
 import Modal from '../components/Shared/Modal';
@@ -12,6 +13,8 @@ export default function GalleryPage() {
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [readingStory, setReadingStory] = useState<Story | null>(null);
+  const [parentMode, setParentMode] = useState(false);
+  const [parentPin, setParentPin] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,12 +23,31 @@ export default function GalleryPage() {
 
   async function loadStories() {
     try {
-      const data = await listStories();
+      const data = parentMode
+        ? await apiFetch<Story[]>('/stories/parent/all')
+        : await listStories();
       setStories(data);
     } catch {
       // silently handle
     } finally {
       setLoading(false);
+    }
+  }
+
+  function toggleParentMode() {
+    if (parentMode) {
+      setParentMode(false);
+      setParentPin('');
+      loadStories();
+    } else {
+      const pin = prompt('请输入家长密码：');
+      if (pin === '0000') {
+        setParentMode(true);
+        setParentPin(pin);
+        loadStories();
+      } else if (pin !== null) {
+        alert('密码不正确');
+      }
     }
   }
 
@@ -57,10 +79,15 @@ export default function GalleryPage() {
   return (
     <div className="gallery-page page">
       <div className="gallery-header">
-        <h1>📚 我的故事画廊</h1>
-        <Button variant="primary" onClick={() => navigate('/characters')}>
-          ✨ 创作新故事
-        </Button>
+        <h1>{parentMode ? '家长查看 · 全部数据' : '📚 我的故事画廊'}</h1>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button variant={parentMode ? 'secondary' : 'ghost'} size="sm" onClick={toggleParentMode}>
+            {parentMode ? '退出家长模式' : '家长查看'}
+          </Button>
+          {!parentMode && (
+            <Button variant="primary" onClick={() => navigate('/characters')}>✨ 创作新故事</Button>
+          )}
+        </div>
       </div>
 
       {stories.length === 0 ? (

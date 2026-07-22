@@ -65,35 +65,43 @@
 
 .home-feature {
   text-align: center;
-  padding: 24px 16px;
+  padding: 28px 16px;
   background: var(--color-white);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-
-.home-feature span {
-  font-size: 40px;
-  display: block;
-  margin-bottom: 10px;
-}
+.home-feature:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
 
 .home-feature h3 {
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
-  margin-bottom: 6px;
+  font-size: var(--font-size-sm); color: var(--color-text);
+  margin-bottom: 6px; margin-top: 4px;
+}
+.home-feature p {
+  font-size: var(--font-size-xs); color: var(--color-text-light); line-height: 1.5;
 }
 
-.home-feature p {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-light);
-  line-height: 1.5;
+.feature-icon {
+  width: 72px; height: 72px; margin: 0 auto 12px;
+}
+.feature-icon svg {
+  width: 100%; height: 100%;
 }
 
 @media (max-width: 600px) {
-  .home-features {
-    grid-template-columns: 1fr;
-  }
-  .home-title {
-    font-size: var(--font-size-xl);
-  }
+  .home-title { font-size: var(--font-size-xl); }
 }
+
+/* ── Doodle decorations ── */
+.home-doodles {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 120px; pointer-events: none; z-index: 0;
+  overflow: hidden;
+}
+.doodle {
+  position: absolute; bottom: 0; opacity: 0.5;
+}
+.doodle-flower-1 { left: 8%; width: 50px; }
+.doodle-rabbit { left: 28%; width: 55px; bottom: 4px; }
+.doodle-cat { right: 25%; width: 55px; bottom: 2px; }
+.doodle-grass { left: 0; right: 0; width: 100%; height: 30px; bottom: 0; opacity: 0.35; }
