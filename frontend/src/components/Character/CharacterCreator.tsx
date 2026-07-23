@@ -5,7 +5,6 @@ import { AVATAR_EMOJI, AVATAR_LABELS } from './CharacterCard';
 import './CharacterCreator.css';
 
 const AVATAR_TYPES = Object.keys(AVATAR_EMOJI);
-const COLORS = ['#FF6B6B', '#FF8C42', '#FFD93D', '#6BCB77', '#4D96FF', '#9B59B6', '#FF6FB7', '#45B7D1'];
 const CUSTOM_AVATAR_KEY = '__custom__';
 
 interface CharacterCreatorProps {
@@ -18,7 +17,6 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
   const [avatarType, setAvatarType] = useState(AVATAR_TYPES[0]);
   const [customAvatarType, setCustomAvatarType] = useState('');
   const [isCustomAvatar, setIsCustomAvatar] = useState(false);
-  const [avatarColor, setAvatarColor] = useState(COLORS[0]);
   const [personality, setPersonality] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -28,8 +26,8 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
   }
 
   function getPreviewEmoji(): string {
-    if (isCustomAvatar) return '🦸';
-    return AVATAR_EMOJI[avatarType] || '🌟';
+    if (isCustomAvatar) return '\u{1F9B8}';  // superhero emoji
+    return AVATAR_EMOJI[avatarType] || '\u{1F31F}';  // star
   }
 
   function getPreviewLabel(): string {
@@ -57,7 +55,7 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
       await onCreate({
         nickname: nickname.trim(),
         avatar_type: getEffectiveAvatarType(),
-        avatar_color: avatarColor,
+        avatar_color: '#FF8C42',
         personality: personality.trim() || undefined,
         age_group: user.age_group,
       });
@@ -71,16 +69,14 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
 
   return (
     <form className="character-creator" onSubmit={handleSubmit}>
-      <h3 className="creator-title">创建一个新角色 🎨</h3>
+      <h3 className="creator-title">创建一个新角色</h3>
 
       <div className="creator-field">
         <label>角色昵称</label>
         <input
-          type="text"
-          value={nickname}
+          type="text" value={nickname}
           onChange={(e) => setNickname(e.target.value)}
-          placeholder="给你的角色取个名字"
-          maxLength={20}
+          placeholder="给你的角色取个名字" maxLength={20}
         />
       </div>
 
@@ -88,9 +84,7 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
         <label>选择形象</label>
         <div className="avatar-grid">
           {AVATAR_TYPES.map((type) => (
-            <button
-              key={type}
-              type="button"
+            <button key={type} type="button"
               className={`avatar-option ${!isCustomAvatar && avatarType === type ? 'avatar-option-selected' : ''}`}
               onClick={() => { setIsCustomAvatar(false); setAvatarType(type); }}
               title={AVATAR_LABELS[type]}
@@ -99,58 +93,31 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
               <span className="avatar-option-label">{AVATAR_LABELS[type]}</span>
             </button>
           ))}
-          <button
-            type="button"
+          <button type="button"
             className={`avatar-option avatar-option-custom ${isCustomAvatar ? 'avatar-option-selected' : ''}`}
-            onClick={() => setIsCustomAvatar(true)}
-            title="自定义形象"
+            onClick={() => setIsCustomAvatar(true)} title="自定义形象"
           >
-            <span className="avatar-option-emoji">✏️</span>
+            <span className="avatar-option-emoji">?</span>
             <span className="avatar-option-label">自定义</span>
           </button>
         </div>
         {isCustomAvatar && (
-          <input
-            type="text"
-            className="custom-avatar-input"
-            value={customAvatarType}
-            onChange={(e) => setCustomAvatarType(e.target.value)}
-            placeholder="输入你的角色形象，例如：一只会飞的小海豚"
-            maxLength={30}
-            autoFocus
+          <input type="text" className="custom-avatar-input"
+            value={customAvatarType} onChange={(e) => setCustomAvatarType(e.target.value)}
+            placeholder="输入你的角色形象，例如：一只会飞的小海豚" maxLength={30} autoFocus
           />
         )}
       </div>
 
       <div className="creator-field">
-        <label>选择颜色</label>
-        <div className="color-row">
-          {COLORS.map((color) => (
-            <button
-              key={color}
-              type="button"
-              className={`color-dot ${avatarColor === color ? 'color-dot-selected' : ''}`}
-              style={{ backgroundColor: color }}
-              onClick={() => setAvatarColor(color)}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="creator-field">
         <label>角色人设（可选）</label>
-        <input
-          type="text"
-          value={personality}
+        <input type="text" value={personality}
           onChange={(e) => setPersonality(e.target.value)}
-          placeholder="例如：一位善良勇敢的小精灵、一只来自未来的机器猫"
-          maxLength={100}
+          placeholder="例如：一位善良勇敢的小精灵、一只来自未来的机器猫" maxLength={100}
         />
       </div>
 
-
-      {/* Preview */}
-      <div className="creator-preview" style={{ borderColor: avatarColor }}>
+      <div className="creator-preview">
         <span className="preview-emoji">{getPreviewEmoji()}</span>
         <div className="preview-info">
           <span className="preview-name">{nickname || '你的角色'}</span>
@@ -158,10 +125,10 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
         </div>
       </div>
 
-      {error && <p className="creator-error">😅 {error}</p>}
+      {error && <p className="creator-error">{error}</p>}
 
       <Button type="submit" variant="primary" size="lg" disabled={loading}>
-        {loading ? '创建中...' : '✨ 创建角色'}
+        {loading ? '创建中...' : '创建角色'}
       </Button>
     </form>
   );

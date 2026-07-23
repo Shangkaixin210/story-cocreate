@@ -107,6 +107,15 @@
   font-size: 0.58em;
 }
 
+.reader-fs-s .reader-content p { font-size: 1rem; }
+.reader-fs-m .reader-content p { font-size: var(--font-size-body); }
+.reader-fs-l .reader-content p { font-size: 1.5rem; }
+
+.fontsize-toggle { display: flex; gap: 2px; }
+.fs-btn { padding: 3px 8px; border: 1px solid #ddd; border-radius: var(--radius-sm); background: #f8f8f8; font-size: 11px; cursor: pointer; color: var(--color-text-light); }
+.fs-btn:hover { border-color: var(--color-primary); }
+.fs-active { background: var(--color-primary); color: white; border-color: var(--color-primary); }
+
 .reader-error {
   text-align: center;
   color: var(--color-danger);

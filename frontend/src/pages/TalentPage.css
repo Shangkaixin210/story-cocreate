@@ -1,111 +1,105 @@
-.talent-page { padding-top: 24px; padding-bottom: 48px; }
-.talent-error { text-align: center; color: var(--color-danger); padding: 48px 24px; }
+.talent-page { padding-top: 24px; padding-bottom: 56px; }
+.talent-error { padding: 64px 24px; text-align: center; color: var(--color-danger); }
 
-/* Hero */
+/* ── Hero ── */
 .talent-hero {
-  text-align: center; padding: 32px 24px;
+  width: 100%; max-width: 700px; margin: 18px auto 22px; padding: 34px; box-sizing: border-box;
+  border-radius: var(--radius-card);
   background: linear-gradient(135deg, #FFF8F0, #FFE8D6, #FFF0E0);
-  border-radius: var(--radius-card); margin-bottom: 24px;
+  box-shadow: 0 4px 20px rgba(255,140,66,0.08);
+  position: relative; overflow: hidden;
 }
-.talent-hero-emoji { font-size: 64px; display: block; margin-bottom: 12px; }
-.talent-hero-level { font-size: var(--font-size-xl); color: var(--color-primary); margin-bottom: 8px; }
-.talent-hero-desc { font-size: var(--font-size-body); color: var(--color-text-light); max-width: 500px; margin: 0 auto 8px; line-height: 1.6; }
-.talent-hero-meta { font-size: var(--font-size-xs); color: var(--color-text-light); opacity: 0.7; display: flex; gap: 6px; justify-content: center; }
-
-/* Radar grid */
-.talent-radar {
-  background: var(--color-white); border-radius: var(--radius-card);
-  padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow-sm);
+.talent-hero::before {
+  content: ''; position: absolute; top: -30px; right: -30px;
+  width: 100px; height: 100px; border-radius: 50%;
+  background: rgba(255,140,66,0.06);
 }
-.talent-radar h2 { font-size: var(--font-size-md); margin-bottom: 16px; }
-
-.talent-radar-grid {
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
-}
-
-.talent-radar-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.talent-radar-ring { position: relative; width: 80px; height: 80px; }
-.talent-radar-ring svg { width: 80px; height: 80px; }
-.talent-radar-num {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  font-size: 22px; font-weight: 700; color: var(--color-text);
-}
-.talent-radar-label { font-size: var(--font-size-xs); color: var(--color-text-light); text-align: center; }
-
-/* Bars */
-.talent-scores {
-  background: var(--color-white); border-radius: var(--radius-card);
-  padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow-sm);
-}
-.talent-scores h2 { font-size: var(--font-size-md); margin-bottom: 16px; }
-
-.talent-bar { margin-bottom: 16px; }
-.talent-bar:last-child { margin-bottom: 0; }
-
-.talent-bar-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.talent-bar-label { font-size: var(--font-size-sm); font-weight: 700; }
-.talent-bar-score { font-size: var(--font-size-sm); font-weight: 700; color: var(--color-primary); margin-left: auto; }
-.talent-bar-score small { font-size: 0.7em; opacity: 0.6; }
-.talent-bar-trend { font-size: var(--font-size-xs); color: var(--color-text-light); min-width: 70px; text-align: right; }
-.talent-bar-desc { font-size: 11px; color: #bbb; margin-top: 2px; }
-
-.talent-bar-track { height: 10px; background: #F0E8DC; border-radius: 5px; overflow: hidden; }
-.talent-bar-fill { height: 100%; border-radius: 5px; transition: width 1s ease; }
-.talent-fill-high { background: linear-gradient(90deg, #6BCB77, #4CAF50); }
-.talent-fill-mid { background: linear-gradient(90deg, #FFD93D, #FFC107); }
-.talent-fill-low { background: linear-gradient(90deg, #FF8C42, #FF6B6B); }
-
-/* Stats */
-.talent-stats {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;
-}
-.talent-stat-card {
-  background: var(--color-white); border-radius: var(--radius-card);
-  padding: 20px 16px; text-align: center; box-shadow: var(--shadow-sm);
-}
-.talent-stat-num { font-size: var(--font-size-xl); font-weight: 700; color: var(--color-primary); display: block; }
-.talent-stat-label { font-size: var(--font-size-xs); color: var(--color-text-light); margin-top: 4px; }
-
-/* Tags */
-.talent-tags {
-  background: var(--color-white); border-radius: var(--radius-card);
-  padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow-sm);
-}
-.talent-tags h2 { font-size: var(--font-size-md); margin-bottom: 12px; }
-.talent-tags-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.talent-tag {
-  padding: 6px 16px; background: linear-gradient(135deg, #FFF0E0, #FFE0C0);
-  border: 2px solid var(--color-accent); border-radius: var(--radius-button);
-  font-size: var(--font-size-sm); font-weight: 700; color: var(--color-text);
+.talent-hero h1 { margin: 0 0 10px; font-size: clamp(26px, 4vw, 40px); color: var(--color-primary); }
+.talent-hero > p:not(.talent-kicker) { margin: 0; color: var(--color-text-light); line-height: 1.7; }
+.talent-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.talent-meta span {
+  padding: 7px 14px; border-radius: 999px; background: white;
+  color: var(--color-text-light); font-size: 12px; font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-/* Highlights */
-.talent-highlights {
-  background: var(--color-white); border-radius: var(--radius-card);
-  padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow-sm);
+/* ── Section cards ── */
+.talent-section, .talent-card {
+  width: 100%; max-width: 700px; margin-left: auto; margin-right: auto; box-sizing: border-box;
+  padding: 28px; border-radius: var(--radius-card); background: var(--color-white);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  margin-bottom: 18px; border: 1px solid #F0E8DC;
+  transition: box-shadow 0.2s ease;
 }
-.talent-highlights h2 { font-size: var(--font-size-md); margin-bottom: 12px; }
-.talent-hl-item {
-  padding: 8px 14px; background: #FAF6F0; border-radius: var(--radius-sm);
-  margin-bottom: 6px; font-size: var(--font-size-xs); color: var(--color-text); line-height: 1.5;
+.talent-section:hover, .talent-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+
+.talent-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.talent-section-heading h2, .talent-card h2 { margin: 0; font-size: 21px; color: var(--color-text); }
+.talent-level {
+  display: inline-block; margin-top: 8px; padding: 4px 14px;
+  border-radius: 999px; font-size: 12px; font-weight: 700;
+  background: #F5F0E8; color: var(--color-text-light);
 }
-.talent-hl-tags { margin-right: 6px; }
+.talent-total { flex: 0 0 auto; text-align: right; color: var(--color-primary); }
+.talent-total strong { display: block; font-size: 38px; line-height: 1; }
+.talent-total span { font-size: 11px; color: var(--color-text-light); }
 
-/* Feedback */
-.talent-feedback { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-.talent-fb-card {
-  background: var(--color-white); border-radius: var(--radius-card);
-  padding: 24px; box-shadow: var(--shadow-sm);
+.language-score-breakdown { display: flex; gap: 10px; margin: 18px 0; }
+.language-score-breakdown span { padding: 8px 14px; border-radius: 12px; background: #FFF6EB; font-size: 13px; font-weight: 600; }
+
+/* ── Dimension bars ── */
+.talent-dimensions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px 20px; margin-top: 22px; }
+.talent-dimension-label { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; font-size: 13px; }
+.talent-dimension-label b { color: var(--color-primary); }
+.talent-track { height: 8px; overflow: hidden; border-radius: 99px; background: #F1E8DD; }
+.talent-track span {
+  display: block; height: 100%; border-radius: inherit;
+  background: linear-gradient(90deg, #FFB380, #FF8C42);
+  transition: width 0.6s ease;
 }
-.talent-fb-card h2 { font-size: var(--font-size-md); margin-bottom: 12px; }
-.talent-fb-card li { font-size: var(--font-size-sm); color: var(--color-text); margin-bottom: 8px; line-height: 1.6; list-style-position: inside; }
-.strengths li::marker { content: '✅ '; }
-.suggestions li::marker { content: '💡 '; }
 
-.talent-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+/* ── Secondary grid ── */
+.talent-secondary-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; width: 100%; }
+.talent-secondary-grid .talent-section { width: 100%; box-sizing: border-box; }
+.talent-secondary-grid .talent-dimensions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-@media (max-width: 700px) {
-  .talent-radar-grid { grid-template-columns: repeat(3, 1fr); }
-  .talent-feedback { grid-template-columns: 1fr; }
-  .talent-stats { grid-template-columns: 1fr; }
+/* ── Highlights ── */
+.talent-card { margin-bottom: 18px; }
+.talent-card h2 { margin-bottom: 16px; }
+.talent-quotes { display: grid; gap: 10px; }
+.talent-quotes blockquote {
+  margin: 0; padding: 14px 18px;
+  border-left: 4px solid var(--color-primary);
+  background: linear-gradient(90deg, #FAF6F0, #FFF);
+  border-radius: 0 10px 10px 0; font-size: 14px; line-height: 1.7;
+  color: var(--color-text);
+  position: relative;
+}
+.talent-quotes blockquote::before {
+  content: '"'; position: absolute; left: 10px; top: 4px;
+  font-size: 28px; color: var(--color-primary-light); opacity: 0.5;
+  font-family: serif; line-height: 1;
+}
+
+/* ── Feedback ── */
+.talent-feedback { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.talent-feedback li { margin-bottom: 8px; color: var(--color-text-light); line-height: 1.65; font-size: 14px; }
+
+/* ── Actions ── */
+.talent-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; margin-top: 8px; }
+
+/* ── Responsive ── */
+@media (max-width: 760px) {
+  .talent-page { padding-top: 16px; }
+  .talent-hero, .talent-section, .talent-card { padding: 20px; }
+  .talent-section-heading { align-items: center; }
+  .talent-total strong { font-size: 31px; }
+  .talent-dimensions, .talent-secondary-grid, .talent-secondary-grid .talent-dimensions, .talent-feedback { grid-template-columns: 1fr; }
+}
+@media (max-width: 430px) {
+  .talent-hero { padding: 18px; }
+  .talent-section-heading { align-items: flex-start; }
+  .talent-section-heading h2 { font-size: 18px; }
+  .talent-total strong { font-size: 27px; }
+  .language-score-breakdown { flex-direction: column; }
 }

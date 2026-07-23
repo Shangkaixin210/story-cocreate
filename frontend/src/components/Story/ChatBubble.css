@@ -9,6 +9,12 @@
   align-self: flex-start;
 }
 
+.chat-bubble-fairy {
+  align-self: flex-start;
+  max-width: 78%;
+  margin-left: 18px;
+}
+
 .chat-bubble-child {
   align-self: flex-end;
   flex-direction: row-reverse;
@@ -36,6 +42,40 @@
 .chat-bubble-ai .chat-bubble-content {
   background: var(--color-bubble-ai);
   border-top-left-radius: 4px;
+}
+
+.chat-bubble-fairy .chat-bubble-avatar {
+  width: 46px;
+  height: 46px;
+  background: linear-gradient(145deg, #fff7bf, #ffd85a);
+  box-shadow: 0 4px 14px rgba(231, 169, 35, .32);
+  animation: fairyFloat 2.4s ease-in-out infinite;
+}
+
+.chat-bubble-fairy .chat-bubble-content {
+  background: linear-gradient(135deg, #fffbed, #fff2bf);
+  border: 1px solid #efd77c;
+  border-top-left-radius: 4px;
+  box-shadow: 0 4px 14px rgba(187, 137, 26, .1);
+}
+
+.story-fairy-star { width: 35px; height: 35px; overflow: visible; }
+.story-fairy-star path:first-child { fill: #ffbd2e; stroke: #e49716; stroke-width: 2; stroke-linejoin: round; }
+.story-fairy-star circle { fill: #664615; }
+.story-fairy-star .story-fairy-smile { fill: none; stroke: #664615; stroke-width: 2.2; stroke-linecap: round; }
+.story-fairy-name {
+  display: block;
+  margin-bottom: 3px;
+  color: #a46b00;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
+.chat-bubble-fairy .chat-bubble-text { line-height: 1.8; }
+
+@keyframes fairyFloat {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-4px) rotate(2deg); }
 }
 
 .chat-bubble-child .chat-bubble-content {
@@ -134,3 +174,8 @@
 .chat-bubble-text::selection {
   background: var(--color-accent-light);
 }
+
+/* Font size variants */
+.chat-fs-s .chat-bubble-text { font-size: 1rem; }
+.chat-fs-m .chat-bubble-text { font-size: var(--font-size-body); }
+.chat-fs-l .chat-bubble-text { font-size: 1.5rem; }

@@ -1,14 +1,7 @@
-"""
-Language talent profile generator v2.
+"""Generate the standardized three-channel talent report.
 
-5-dimension model based on Gardner's Multiple Intelligences (linguistic domain):
-1. vocabulary_semantic   — 词汇语义敏感度
-2. sentence_fluency       — 句式与表达流畅度
-3. narrative_completeness — 叙事宏观完整度
-4. character_empathy      — 角色语言共情
-5. creative_initiative    — 创作主动性
-
-Supports two age groups: 4-7 (lenient) and 8-12 (standard).
+Only observations attached to genuine child messages are used. Historical
+stories belonging to the same account provide the persistent progress memory.
 """
 
 import json
@@ -17,84 +10,37 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.observation import Observation
+from app.models.character import Character
 from app.models.message import StoryMessage
+from app.models.observation import Observation
 from app.models.story import Story
 
 
 @dataclass
-class LanguageTalentProfile:
+class TalentProfile:
     story_id: int
     story_title: str
     total_turns: int
     age_group: str
     completed: bool
-
-    # 5-dimension scores
-    avg_vocabulary_semantic: float | None = None
-    avg_sentence_fluency: float | None = None
-    avg_narrative_completeness: float | None = None
-    avg_character_empathy: float | None = None
-    avg_creative_initiative: float | None = None
-    overall_score: float | None = None
-
-    # Trends
-    vocab_trend: str = ""
-    fluency_trend: str = ""
-    narrative_trend: str = ""
-    empathy_trend: str = ""
-    initiative_trend: str = ""
-
-    # Levels
-    overall_level: str = ""
-    level_label: str = ""
-    level_description: str = ""
-    talent_tags: list[str] = field(default_factory=list)
-
-    # Highlights
-    semantic_highlights: list[str] = field(default_factory=list)
-    empathy_highlights: list[str] = field(default_factory=list)
-    initiative_highlights: list[str] = field(default_factory=list)
-
-    # Stats
+    language: dict = field(default_factory=dict)
+    empathy: dict = field(default_factory=dict)
+    imagination: dict = field(default_factory=dict)
+    growth_memory: dict = field(default_factory=dict)
+    highlights: list[str] = field(default_factory=list)
     total_words: int = 0
     avg_words_per_turn: float = 0.0
-
-    # Feedback
     strengths: list[str] = field(default_factory=list)
     suggestions: list[str] = field(default_factory=list)
 
 
-# ── Level definitions by age group ──
-
-LEVELS_8_12 = [
-    {"name": "语言优势型", "min": 4.0, "label": "🌟 语言优势型",
-     "desc": "展现出卓越的语言天赋！能独立搭建完整故事闭环，运用丰富的修辞手法，为角色赋予差异化台词与内心独白。你的文字里住着一位天生的创作者。建议：多读经典文学作品，参加写作或演讲活动，让天赋在系统的训练中进一步绽放。"},
-    {"name": "能力均衡型", "min": 2.5, "label": "✨ 能力均衡型",
-     "desc": "语言能力发展均衡！能完成基础故事框架，有一定修饰和情节意识。每一段创作都在为语言能力添砖加瓦。建议：多尝试不同类型的写作（记叙文、诗歌、剧本），在多样化练习中找到自己最擅长的表达方式。"},
-    {"name": "潜力待激活", "min": 0, "label": "🌱 潜力待激活",
-     "desc": "语言天赋的种子正在蓄力。可能目前回答较为简短或被框架限制，但每一次开口都在积累语言素材。建议：从感兴趣的话题切入，用聊天的形式多讲故事，降低写作压力，让语言自然流动起来。"},
-]
-
-LEVELS_4_7 = [
-    {"name": "语言优势型", "min": 3.5, "label": "🧚 语言优势型",
-     "desc": "语言表达非常活跃！喜欢创编故事、主动描述画面、模仿角色说话，口语输出欲旺盛。这是语言天赋的早期闪光信号。建议：多读绘本，鼓励TA把看到的画面用自己的话说出来，表扬每一次主动表达。"},
-    {"name": "能力均衡型", "min": 2.5, "label": "🎈 能力均衡型",
-     "desc": "语言能力发展均衡！能跟随引导参与故事，有基本的表达和描述意识。这是健康发展的节奏。建议：多用开放式问题激发表达，减少选择式提问，给TA更多自由发挥空间。"},
-    {"name": "潜力待激活", "min": 0, "label": "🌿 潜力待激活",
-     "desc": "语言表达的种子刚刚萌芽。可能更倾向于听故事而非讲故事，或者需要更多时间和安全感来开口。这完全正常——每个孩子都有自己的节奏。建议：从模仿角色声音开始，用游戏的方式降低表达门槛，多听多输入。"},
-]
-
-
-def _compute_trend(scores: list[int]) -> str:
-    if len(scores) < 2: return "数据不足"
-    mid = len(scores) // 2
-    first = sum(scores[:mid]) / mid
-    second = sum(scores[mid:]) / (len(scores) - mid)
-    diff = second - first
-    if diff > 0.5: return "上升 📈"
-    elif diff < -0.5: return "回落 🔄"
-    else: return "稳定 ➡️"
+RUBRIC_KEYS = (
+    "language_causal_logic", "language_plot_memory", "language_vocabulary",
+    "language_detail", "language_character_voice", "language_initiative",
+    "empathy_emotion", "empathy_perspective", "empathy_prosocial",
+    "empathy_conflict", "imagination_character", "imagination_setting",
+    "imagination_rules", "imagination_side_plot",
+)
 
 
 def _is_system_ending_request(text: str) -> bool:
@@ -102,165 +48,259 @@ def _is_system_ending_request(text: str) -> bool:
     return "请从刚才的情节继续" in normalized and "完整的大结局" in normalized
 
 
-async def generate_talent_profile(db: AsyncSession, story_id: int) -> LanguageTalentProfile | None:
-    story = await db.get(Story, story_id)
-    if not story:
-        return None
+def _raw(observation: Observation) -> dict:
+    try:
+        value = json.loads(observation.raw_observation or "{}")
+        return value if isinstance(value, dict) else {}
+    except (TypeError, json.JSONDecodeError):
+        return {}
 
-    result = await db.execute(
+
+def _rubric_value(observation: Observation, key: str) -> float:
+    data = _raw(observation)
+    if key in data:
+        try:
+            return float(max(0, min(5, float(data[key]))))
+        except (TypeError, ValueError):
+            pass
+
+    vocab = float(observation.vocabulary_semantic or 1)
+    fluency = float(observation.sentence_fluency or 1)
+    narrative = float(observation.narrative_completeness or 1)
+    empathy = float(observation.character_empathy or 1)
+    initiative = float(observation.creative_initiative or 1)
+    legacy = {
+        "language_causal_logic": narrative,
+        "language_plot_memory": max(0, narrative - 1),
+        "language_vocabulary": vocab,
+        "language_detail": max(0, (vocab + fluency) / 2 - 1),
+        "language_character_voice": empathy,
+        "language_initiative": initiative,
+        "empathy_emotion": empathy,
+        "empathy_perspective": max(0, empathy - 1),
+        "empathy_prosocial": max(0, empathy - 1),
+        "empathy_conflict": max(0, empathy - 1),
+        "imagination_character": initiative,
+        "imagination_setting": max(0, initiative - 1),
+        "imagination_rules": max(0, initiative - 1),
+        "imagination_side_plot": max(0, initiative - 1),
+    }
+    return legacy[key]
+
+
+def _averages(observations: list[Observation]) -> dict[str, float]:
+    if not observations:
+        return {key: 0.0 for key in RUBRIC_KEYS}
+    return {
+        key: sum(_rubric_value(item, key) for item in observations) / len(observations)
+        for key in RUBRIC_KEYS
+    }
+
+
+def _weighted(label: str, key: str, weight: int, values: dict[str, float]) -> dict:
+    score = round(values[key] / 5 * weight, 1)
+    return {"key": key, "label": label, "score": score, "max_score": weight}
+
+
+def _language_section(values: dict[str, float], age_group: str) -> dict:
+    if age_group == "4-7":
+        specs = [
+            ("因果逻辑", "language_causal_logic", 18),
+            ("情节记忆", "language_plot_memory", 12),
+            ("词汇丰富度", "language_vocabulary", 22),
+            ("细节描写", "language_detail", 20),
+            ("角色语言创作", "language_character_voice", 18),
+            ("创作主动性", "language_initiative", 10),
+        ]
+    else:
+        specs = [
+            ("完整故事闭环", "language_causal_logic", 20),
+            ("长线情节记忆", "language_plot_memory", 15),
+            ("细节描写", "language_detail", 23),
+            ("角色语言创作", "language_character_voice", 20),
+            ("词汇丰富度", "language_vocabulary", 14),
+            ("创作主动性", "language_initiative", 8),
+        ]
+    dimensions = [_weighted(*spec, values) for spec in specs]
+    return {"base_score": round(sum(item["score"] for item in dimensions), 1), "dimensions": dimensions}
+
+
+def _independent_section(values: dict[str, float], specs: list[tuple[str, str]]) -> dict:
+    dimensions = [_weighted(label, key, 25, values) for label, key in specs]
+    return {"score": round(sum(item["score"] for item in dimensions), 1), "dimensions": dimensions}
+
+
+def _level(score: float, language: bool = False) -> tuple[str, str]:
+    if language:
+        if score >= 90:
+            return "advantage", "语言优势型"
+        if score >= 70:
+            return "balanced", "能力均衡型"
+        return "developing", "潜力待激活"
+    if score >= 80:
+        return "advantage", "优势突出"
+    if score >= 50:
+        return "balanced", "发展均衡"
+    return "developing", "潜力待激活"
+
+
+def _growth_index(values: dict[str, float]) -> float:
+    # The standard specifically asks progress to be judged from vocabulary,
+    # plot memory and detail rather than from empathy or imagination.
+    return round(sum(values[key] for key in (
+        "language_vocabulary", "language_plot_memory", "language_detail"
+    )) / 3 / 5 * 100, 1)
+
+
+def _progress_bonus(change: float, has_history: bool) -> int:
+    if not has_history or change < 1:
+        return 0
+    if change >= 15:
+        return 10
+    if change >= 12:
+        return 9
+    if change >= 9:
+        return 8
+    if change >= 7:
+        return 7
+    if change >= 5:
+        return 6
+    if change >= 3:
+        return 5
+    return 3
+
+
+async def _valid_observations(
+    db: AsyncSession, story_id: int
+) -> tuple[list[Observation], list[StoryMessage]]:
+    messages = (await db.execute(
+        select(StoryMessage).where(
+            StoryMessage.story_id == story_id,
+            StoryMessage.role == "child",
+        )
+    )).scalars().all()
+    messages = [item for item in messages if not _is_system_ending_request(item.content)]
+    message_ids = {item.id for item in messages}
+    observations = (await db.execute(
         select(Observation)
         .where(Observation.story_id == story_id)
         .order_by(Observation.turn_number)
-    )
-    obs_list = result.scalars().all()
+    )).scalars().all()
+    return [item for item in observations if item.message_id in message_ids], messages
 
-    # Observations must be backed by genuine child messages. Older versions
-    # accidentally saved the UI's "write the ending" command as child input.
-    msg_result = await db.execute(
-        select(StoryMessage)
-        .where(StoryMessage.story_id == story_id, StoryMessage.role == "child")
-    )
-    all_child_msgs = msg_result.scalars().all()
-    child_msgs = [m for m in all_child_msgs if not _is_system_ending_request(m.content)]
-    child_by_id = {message.id: message for message in child_msgs}
-    obs_list = [observation for observation in obs_list if observation.message_id in child_by_id]
 
-    # Get age_group from character
-    from app.models.character import Character
-    char = await db.get(Character, story.character_id)
-    age_group = char.age_group or "8-12" if char else "8-12"
+async def generate_talent_profile(db: AsyncSession, story_id: int) -> TalentProfile | None:
+    story = await db.get(Story, story_id)
+    if not story:
+        return None
+    character = await db.get(Character, story.character_id)
+    age_group = (character.age_group if character else None) or "8-12"
+    observations, child_messages = await _valid_observations(db, story_id)
+    values = _averages(observations)
 
-    p = LanguageTalentProfile(
-        story_id=story_id,
-        story_title=story.title or story.theme or "未命名故事",
-        total_turns=len(obs_list),
-        age_group=age_group,
-        completed=(story.status == "completed"),
-    )
+    language = _language_section(values, age_group)
+    empathy = _independent_section(values, [
+        ("情绪识别与表达", "empathy_emotion"),
+        ("换位思考", "empathy_perspective"),
+        ("互助与包容情节", "empathy_prosocial"),
+        ("温和解决冲突", "empathy_conflict"),
+    ])
+    imagination = _independent_section(values, [
+        ("原创角色或生物", "imagination_character"),
+        ("独特虚构场景", "imagination_setting"),
+        ("原创世界规则", "imagination_rules"),
+        ("支线与隐藏情节", "imagination_side_plot"),
+    ])
 
-    if not obs_list:
-        p.overall_level = "继续探索中"
-        p.suggestions = ["多和故事导演聊天，创作更多故事吧！"]
-        return p
+    history_values: list[dict[str, float]] = []
+    if character:
+        prior_stories = (await db.execute(
+            select(Story)
+            .join(Character, Story.character_id == Character.id)
+            .where(
+                Character.user_id == character.user_id,
+                Character.age_group == age_group,
+                Story.id != story.id,
+                Story.started_at < story.started_at,
+                Story.is_deleted.is_(False),
+            )
+            .order_by(Story.started_at.desc())
+            .limit(3)
+        )).scalars().all()
+        for prior in prior_stories if observations else []:
+            prior_observations, _ = await _valid_observations(db, prior.id)
+            if prior_observations:
+                history_values.append(_averages(prior_observations))
 
-    # ── Averages ──
-    scores = {
-        "vocab": [o.vocabulary_semantic for o in obs_list if o.vocabulary_semantic is not None],
-        "fluency": [o.sentence_fluency for o in obs_list if o.sentence_fluency is not None],
-        "narrative": [o.narrative_completeness for o in obs_list if o.narrative_completeness is not None],
-        "empathy": [o.character_empathy for o in obs_list if o.character_empathy is not None],
-        "initiative": [o.creative_initiative for o in obs_list if o.creative_initiative is not None],
+    current_index = _growth_index(values)
+    baseline = round(
+        sum(_growth_index(item) for item in history_values) / len(history_values), 1
+    ) if history_values else None
+    change = round(current_index - baseline, 1) if baseline is not None else 0.0
+    bonus = _progress_bonus(change, bool(history_values))
+    language["progress_bonus"] = bonus
+    language["final_score"] = round(language["base_score"] + bonus, 1)
+    language["level"], language["level_label"] = _level(language["final_score"], True)
+    empathy["level"], empathy["level_label"] = _level(empathy["score"])
+    imagination["level"], imagination["level_label"] = _level(imagination["score"])
+
+    growth_memory = {
+        "has_history": bool(history_values),
+        "compared_story_count": len(history_values),
+        "baseline_index": baseline,
+        "current_index": current_index,
+        "change": change,
+        "progress_bonus": bonus,
+        "summary": (
+            f"与最近 {len(history_values)} 个故事相比，词汇、情节记忆和细节成长指数"
+            f"{'提高' if change >= 0 else '下降'} {abs(change):.1f} 分。"
+            if history_values else
+            (
+                "这是首次有效测评，已保存为后续故事的成长基线。"
+                if observations else "尚无孩子的有效创作发言，暂不建立成长基线。"
+            )
+        ),
     }
 
-    p.avg_vocabulary_semantic = round(sum(scores["vocab"]) / len(scores["vocab"]), 1) if scores["vocab"] else None
-    p.avg_sentence_fluency = round(sum(scores["fluency"]) / len(scores["fluency"]), 1) if scores["fluency"] else None
-    p.avg_narrative_completeness = round(sum(scores["narrative"]) / len(scores["narrative"]), 1) if scores["narrative"] else None
-    p.avg_character_empathy = round(sum(scores["empathy"]) / len(scores["empathy"]), 1) if scores["empathy"] else None
-    p.avg_creative_initiative = round(sum(scores["initiative"]) / len(scores["initiative"]), 1) if scores["initiative"] else None
-
-    # ── Trends ──
-    p.vocab_trend = _compute_trend(scores["vocab"])
-    p.fluency_trend = _compute_trend(scores["fluency"])
-    p.narrative_trend = _compute_trend(scores["narrative"])
-    p.empathy_trend = _compute_trend(scores["empathy"])
-    p.initiative_trend = _compute_trend(scores["initiative"])
-
-    # ── Overall score ──
-    all_avgs = [v for v in [p.avg_vocabulary_semantic, p.avg_sentence_fluency,
-                             p.avg_narrative_completeness, p.avg_character_empathy,
-                             p.avg_creative_initiative] if v is not None]
-    p.overall_score = round(sum(all_avgs) / len(all_avgs), 1) if all_avgs else 0.0
-
-    # ── Level ──
-    levels = LEVELS_4_7 if age_group == "4-7" else LEVELS_8_12
-    for lv in levels:
-        if (p.overall_score or 0) >= lv["min"]:
-            p.overall_level = lv["name"]
-            p.level_label = lv["label"]
-            p.level_description = lv["desc"]
-            break
-
-    # ── Talent tags ──
-    tags = []
-    if (p.avg_vocabulary_semantic or 0) >= 4: tags.append("词汇小达人")
-    if (p.avg_sentence_fluency or 0) >= 4: tags.append("流畅叙事者")
-    if (p.avg_narrative_completeness or 0) >= 4: tags.append("故事架构师")
-    if (p.avg_character_empathy or 0) >= 4: tags.append("角色灵魂师")
-    if (p.avg_creative_initiative or 0) >= 4: tags.append("创意探险家")
-    if not tags: tags.append("语言探索者")
-    p.talent_tags = tags
-
-    # Highlights must quote the child and must never display evaluator-generated
-    # prose or the story director's writing.
-    def child_quote(observation: Observation) -> str:
-        message = child_by_id.get(observation.message_id)
+    message_by_id = {item.id: item for item in child_messages}
+    highlights: list[str] = []
+    for observation in observations:
+        message = message_by_id.get(observation.message_id)
         if not message or not message.content.strip():
-            return ""
-        text = " ".join(message.content.split())
-        return f"“{text[:100]}{'…' if len(text) > 100 else ''}”"
-
-    # ── Highlights ──
-    for o in obs_list:
-        quote = child_quote(o)
-        if not quote:
             continue
-        if (o.vocabulary_semantic or 0) >= 3 and quote not in p.semantic_highlights:
-            p.semantic_highlights.append(quote)
-        if (o.character_empathy or 0) >= 3 and quote not in p.empathy_highlights:
-            p.empathy_highlights.append(quote)
-        if (o.creative_initiative or 0) >= 3 and quote not in p.initiative_highlights:
-            p.initiative_highlights.append(quote)
+        quote = " ".join(message.content.split())[:120]
+        if quote and quote not in highlights:
+            highlights.append(quote)
 
-    # ── Word count ──
-    p.total_words = sum(len(m.content) for m in child_msgs)
-    p.avg_words_per_turn = round(p.total_words / len(child_msgs), 1) if child_msgs else 0.0
-
-    # ── Strengths & suggestions ──
-    p.strengths, p.suggestions = _generate_feedback(p)
-
-    return p
-
-
-def _generate_feedback(p: LanguageTalentProfile) -> tuple[list[str], list[str]]:
-    strengths: list[str] = []
-    suggestions: list[str] = []
-
-    dims = [
-        (p.avg_vocabulary_semantic, "词汇语义敏感度",
-         "善于使用丰富的修饰词、情绪词和修辞手法，语言富有感染力",
-         "试试在描述中加入比喻——'像……一样'的句式能让画面立刻生动起来"),
-        (p.avg_sentence_fluency, "句式表达流畅度",
-         "叙事清晰连贯，表达流畅自然",
-         "讲故事时可以试着先说'首先……然后……最后……'，这样听众能更好地跟上你的节奏"),
-        (p.avg_narrative_completeness, "叙事完整度",
-         "能构建完整的起因-冲突-解决的故事结构，很有导演思维",
-         "想一想你的故事里有没有一个'问题'要解决？有了问题和解决办法，故事会更精彩"),
-        (p.avg_character_empathy, "角色共情能力",
-         "擅长让角色说话、思考和感受，故事里的人物活起来了",
-         "试试给你的角色写一句TA最想说的话，或者TA此刻心里在想什么"),
-        (p.avg_creative_initiative, "创作主动性",
-         "创作欲满满！不满足于框架，主动拓展新剧情和新细节",
-         "每次多一点：在AI给出的情节之外，再加一个你自己想到的小插曲"),
-    ]
-
-    for score, name, strength_msg, suggestion_msg in dims:
-        if score is not None:
-            if score >= 4:
-                strengths.append(f"{name}：{strength_msg}")
-            elif score < 2.5 and not (p.age_group == "4-7" and score >= 2):
-                suggestions.append(suggestion_msg)
-
-    if p.vocab_trend == "上升 📈":
-        strengths.append("词汇语义敏感度持续上升，进步明显！")
-    if p.initiative_trend == "上升 📈":
-        strengths.append("创作主动性越来越强，故事越写越精彩！")
-
-    if p.avg_words_per_turn < 5 and p.total_turns > 1:
-        suggestions.append("每次多写一点点，哪怕多一句话，故事都会变得更精彩")
-
+    strengths = []
+    suggestions = []
+    for section, name in ((language, "语言智能"), (empathy, "共情与人际智能"), (imagination, "想象与空间智能")):
+        score = section.get("final_score", section.get("score", 0))
+        if score >= (90 if name == "语言智能" else 80):
+            strengths.append(f"{name}表现突出，可以继续提供更开放、更复杂的创作任务。")
+        elif score < (70 if name == "语言智能" else 50):
+            weakest = min(section["dimensions"], key=lambda item: item["score"] / item["max_score"])
+            suggestions.append(f"{name}可优先练习“{weakest['label']}”，一次只增加一个小挑战。")
     if not strengths:
-        strengths.append("已经开始用语言创作故事，这是一个了不起的起点！")
+        strengths.append("孩子已经留下了可持续追踪的真实创作样本。")
     if not suggestions:
-        suggestions.append("继续保持创作热情，你的语言天赋正在闪闪发光！")
+        suggestions.append("保持稳定创作频率，下一份报告会继续与历史基线比较。")
 
-    return strengths[:5], suggestions[:5]
+    return TalentProfile(
+        story_id=story.id,
+        story_title=story.title or story.theme or "未命名故事",
+        total_turns=len(observations),
+        age_group=age_group,
+        completed=story.status == "completed",
+        language=language,
+        empathy=empathy,
+        imagination=imagination,
+        growth_memory=growth_memory,
+        highlights=highlights[:5],
+        total_words=sum(len(item.content) for item in child_messages),
+        avg_words_per_turn=round(
+            sum(len(item.content) for item in child_messages) / len(child_messages), 1
+        ) if child_messages else 0.0,
+        strengths=strengths,
+        suggestions=suggestions,
+    )

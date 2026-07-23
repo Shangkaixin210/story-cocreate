@@ -119,6 +119,12 @@ export function useSSE() {
         });
         break;
 
+      case 'praise':
+        if (typeof data.text === 'string' && data.text.trim()) {
+          dispatch({ type: 'ADD_FAIRY_PRAISE', content: data.text });
+        }
+        break;
+
       case 'ending':
         dispatch({
           type: 'APPEND_ENDING',

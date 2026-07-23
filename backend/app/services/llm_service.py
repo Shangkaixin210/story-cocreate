@@ -159,6 +159,36 @@ def compute_observation(child_text: str, age_group: str = "") -> dict:
     }
 
 
+def upgrade_observation(data: dict) -> dict:
+    """Add the standardized rubric fields to a legacy/fallback observation."""
+    upgraded = dict(data)
+    narrative = int(upgraded.get("narrative_completeness") or 1)
+    vocabulary = int(upgraded.get("vocabulary_semantic") or 1)
+    empathy = int(upgraded.get("character_empathy") or 1)
+    initiative = int(upgraded.get("creative_initiative") or 1)
+    fluency = int(upgraded.get("sentence_fluency") or 1)
+    defaults = {
+        "language_causal_logic": narrative,
+        "language_plot_memory": max(0, narrative - 1),
+        "language_vocabulary": vocabulary,
+        "language_detail": max(0, round((vocabulary + fluency) / 2) - 1),
+        "language_character_voice": empathy,
+        "language_initiative": initiative,
+        "empathy_emotion": empathy,
+        "empathy_perspective": max(0, empathy - 1),
+        "empathy_prosocial": max(0, empathy - 1),
+        "empathy_conflict": max(0, empathy - 1),
+        "imagination_character": initiative,
+        "imagination_setting": max(0, initiative - 1),
+        "imagination_rules": max(0, initiative - 1),
+        "imagination_side_plot": max(0, initiative - 1),
+        "evidence": [],
+    }
+    for key, value in defaults.items():
+        upgraded.setdefault(key, value)
+    return upgraded
+
+
 def _try_parse_json_line(line: str) -> dict | None:
     """Try to parse a line as JSON. Returns parsed dict or None.
 
@@ -466,29 +496,35 @@ class LLMService:
             pass
 
 
-    async def evaluate_turn(self, child_text: str, age_group: str = "8-12") -> dict:
-        """Call Talent Evaluator agent to analyze child's language output.
-
-        Returns a dict with the 5-dimension observation data.
-        Falls back to compute_observation() on any error.
-        """
+    async def evaluate_turn(
+        self,
+        child_text: str,
+        age_group: str = "8-12",
+        story_context: str = "",
+    ) -> dict:
+        """Evaluate only the child's words, using prior context for continuity."""
         from app.prompts.talent_evaluator import build_evaluator_prompt
 
         if not child_text or not child_text.strip():
-            return compute_observation(child_text, age_group)
+            return upgrade_observation(compute_observation(child_text, age_group))
 
         evaluator_prompt = build_evaluator_prompt(age_group)
+        user_payload = (
+            f"【此前故事上下文（仅供判断承接，不得作为得分证据）】\n"
+            f"{story_context[-5000:] or '无'}\n\n"
+            f"【本次孩子原话（唯一评分对象）】\n{child_text.strip()}"
+        )
 
         try:
             resp = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": evaluator_prompt},
-                    {"role": "user", "content": child_text.strip()},
+                    {"role": "user", "content": user_payload},
                 ],
                 stream=False,
                 temperature=0.3,   # Low temp for consistent scoring
-                max_tokens=500,
+                max_tokens=900,
                 timeout=15.0,
             )
             content = (resp.choices[0].message.content or "").strip()
@@ -497,24 +533,84 @@ class LLMService:
                 content = content.removeprefix("```json").removeprefix("```")
                 content = content.removesuffix("```").strip()
             data = json.loads(content)
-            score = lambda key: max(1, min(5, int(data.get(key, 1))))
-            # Ensure all required fields exist
-            return {
-                "vocabulary_semantic": score("vocabulary_semantic"),
-                "vocabulary_semantic_examples": data.get("vocabulary_semantic_examples", ""),
-                "sentence_fluency": score("sentence_fluency"),
-                "sentence_fluency_examples": data.get("sentence_fluency_examples", ""),
-                "narrative_completeness": score("narrative_completeness"),
-                "narrative_structure_note": data.get("narrative_structure_note", ""),
-                "character_empathy": score("character_empathy"),
-                "character_empathy_examples": data.get("character_empathy_examples", ""),
-                "creative_initiative": score("creative_initiative"),
-                "creative_initiative_examples": data.get("creative_initiative_examples", ""),
-                "creativity_flags": data.get("creativity_flags", []),
-            }
+            keys = (
+                "language_causal_logic", "language_plot_memory",
+                "language_vocabulary", "language_detail",
+                "language_character_voice", "language_initiative",
+                "empathy_emotion", "empathy_perspective",
+                "empathy_prosocial", "empathy_conflict",
+                "imagination_character", "imagination_setting",
+                "imagination_rules", "imagination_side_plot",
+            )
+            score = lambda key: max(0, min(5, int(data.get(key, 0))))
+            result = {key: score(key) for key in keys}
+            evidence = data.get("evidence", [])
+            result["evidence"] = [
+                str(item)[:120] for item in evidence if str(item).strip()
+            ][:3] if isinstance(evidence, list) else []
+
+            # Keep the original columns populated for older code and reports.
+            result.update({
+                "vocabulary_semantic": max(1, result["language_vocabulary"]),
+                "vocabulary_semantic_examples": "；".join(result["evidence"]),
+                "sentence_fluency": max(1, result["language_causal_logic"]),
+                "sentence_fluency_examples": "",
+                "narrative_completeness": max(1, result["language_causal_logic"]),
+                "narrative_structure_note": "",
+                "character_empathy": max(
+                    1,
+                    round(sum(result[k] for k in (
+                        "empathy_emotion", "empathy_perspective",
+                        "empathy_prosocial", "empathy_conflict",
+                    )) / 4),
+                ),
+                "character_empathy_examples": "；".join(result["evidence"]),
+                "creative_initiative": max(1, result["language_initiative"]),
+                "creative_initiative_examples": "；".join(result["evidence"]),
+                "creativity_flags": [],
+            })
+            return result
         except Exception:
             # Fallback to programmatic scoring
-            return compute_observation(child_text, age_group)
+            return upgrade_observation(compute_observation(child_text, age_group))
+
+    async def generate_praise(
+        self,
+        child_text: str,
+        story_context: str = "",
+        age_group: str = "8-12",
+    ) -> str:
+        """Generate one evidence-based, child-friendly praise from Story Fairy."""
+        from app.prompts.story_fairy import build_story_fairy_prompt
+
+        text = child_text.strip()
+        if not text:
+            return ""
+        payload = (
+            f"【此前故事上下文（仅供理解）】\n{story_context[-3500:] or '无'}\n\n"
+            f"【本次孩子原话（唯一夸赞对象）】\n{text}"
+        )
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": build_story_fairy_prompt(age_group)},
+                    {"role": "user", "content": payload},
+                ],
+                stream=False,
+                temperature=0.6,
+                max_tokens=120,
+                timeout=10.0,
+            )
+            content = (response.choices[0].message.content or "").strip()
+            if content.startswith("```"):
+                content = content.removeprefix("```json").removeprefix("```")
+                content = content.removesuffix("```").strip()
+            praise = str(json.loads(content).get("praise", "")).strip()
+            return praise[:80]
+        except Exception:
+            excerpt = " ".join(text.split())[:24]
+            return f"我注意到你写了“{excerpt}”，这是你亲手加进故事里的好点子！"
 
 
 class LLMServiceError(Exception):

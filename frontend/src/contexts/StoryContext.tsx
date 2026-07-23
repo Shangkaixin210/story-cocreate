@@ -4,7 +4,7 @@ import { createContext, useContext, useReducer, type ReactNode, type Dispatch } 
 
 export interface ChatMessage {
   id: string;
-  role: 'ai' | 'child';
+  role: 'ai' | 'child' | 'fairy';
   content: string;
   isStreaming?: boolean;
   isQuestion?: boolean;
@@ -24,6 +24,7 @@ export interface TurnState {
   isStreaming: boolean;
   isEnding: boolean;
   safetyNotice: SafetyNotice | null;
+  fairyPraise: string;
 }
 
 // ── Actions ──
@@ -32,12 +33,13 @@ type TurnAction =
   | { type: 'START_STORY'; storyId: number }
   | { type: 'ADD_CHILD_MESSAGE'; content: string }
   | { type: 'START_AI_STREAMING' }
+  | { type: 'ADD_FAIRY_PRAISE'; content: string }
   | { type: 'APPEND_NARRATIVE_CHUNK'; text: string; imageUrl?: string }
   | { type: 'SET_AI_IMAGE'; imageUrl: string }
   | { type: 'APPEND_ENDING'; text: string; imageUrl?: string }
   | { type: 'SET_AI_QUESTION'; text: string }
   | { type: 'FINISH_TURN'; turnNumber: number; isEnding: boolean }
-  | { type: 'RESTORE_MESSAGES'; messages: ChatMessage[]; turnNumber: number; isEnding: boolean }
+  | { type: 'RESTORE_MESSAGES'; messages: ChatMessage[]; turnNumber: number; isEnding: boolean; fairyPraise?: string }
   | { type: 'SHOW_SAFETY_NOTICE'; message: string; level: string }
   | { type: 'DISMISS_SAFETY_NOTICE' }
   | { type: 'RESET' };
@@ -54,6 +56,7 @@ function turnReducer(state: TurnState, action: TurnAction): TurnState {
         isStreaming: false,
         isEnding: false,
         safetyNotice: null,
+        fairyPraise: '',
       };
 
     case 'ADD_CHILD_MESSAGE': {
@@ -80,6 +83,10 @@ function turnReducer(state: TurnState, action: TurnAction): TurnState {
         isStreaming: true,
       };
       return { ...state, messages: [...state.messages, aiMsg], isStreaming: true };
+    }
+
+    case 'ADD_FAIRY_PRAISE': {
+      return { ...state, fairyPraise: action.content };
     }
 
     case 'APPEND_NARRATIVE_CHUNK': {
@@ -176,6 +183,7 @@ function turnReducer(state: TurnState, action: TurnAction): TurnState {
         messages: action.messages,
         turnNumber: action.turnNumber,
         isEnding: action.isEnding,
+        fairyPraise: action.fairyPraise ?? '',
       };
 
     case 'RESET':
@@ -186,6 +194,7 @@ function turnReducer(state: TurnState, action: TurnAction): TurnState {
         isStreaming: false,
         isEnding: false,
         safetyNotice: null,
+        fairyPraise: '',
       };
 
     default:
@@ -199,7 +208,7 @@ const StoryContext = createContext<{
   state: TurnState;
   dispatch: Dispatch<TurnAction>;
 }>({
-  state: { storyId: null, messages: [], turnNumber: 0, isStreaming: false, isEnding: false, safetyNotice: null },
+  state: { storyId: null, messages: [], turnNumber: 0, isStreaming: false, isEnding: false, safetyNotice: null, fairyPraise: '' },
   dispatch: () => {},
 });
 
@@ -211,6 +220,7 @@ export function StoryProvider({ children }: { children: ReactNode }) {
     isStreaming: false,
     isEnding: false,
     safetyNotice: null,
+    fairyPraise: '',
   });
 
   return (

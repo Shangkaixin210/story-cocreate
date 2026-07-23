@@ -6,6 +6,7 @@ import { getStory, getStoryMessages, updateStory, type StoryMessage } from '../a
 import ChatBubble from '../components/Story/ChatBubble';
 import StoryInput from '../components/Story/StoryInput';
 import TypingIndicator from '../components/Story/TypingIndicator';
+import StoryFairyFloating from '../components/Story/StoryFairyFloating';
 import Button from '../components/Shared/Button';
 import Loading from '../components/Shared/Loading';
 import './StoryPlayPage.css';
@@ -16,6 +17,16 @@ function extractStoredImageUrl(message: StoryMessage): string | undefined {
     const raw = JSON.parse(message.ai_raw_response) as { image_urls?: unknown };
     if (!Array.isArray(raw.image_urls)) return undefined;
     return raw.image_urls.find((url): url is string => typeof url === 'string' && url.length > 0);
+  } catch {
+    return undefined;
+  }
+}
+
+function extractStoredPraise(message: StoryMessage): string | undefined {
+  if (!message.ai_raw_response) return undefined;
+  try {
+    const raw = JSON.parse(message.ai_raw_response) as { praise?: unknown };
+    return typeof raw.praise === 'string' && raw.praise.trim() ? raw.praise : undefined;
   } catch {
     return undefined;
   }
@@ -45,17 +56,22 @@ export default function StoryPlayPage() {
       const story = await getStory(id);
       const msgs = await getStoryMessages(id);
       const chatMessages: ChatMessage[] = msgs.map((m: StoryMessage) => ({
-        id: String(m.id),
-        role: m.role as 'ai' | 'child',
-        content: m.content,
-        isQuestion: false,
-        imageUrl: extractStoredImageUrl(m),
+          id: String(m.id),
+          role: m.role as 'ai' | 'child',
+          content: m.content,
+          isQuestion: false,
+          imageUrl: extractStoredImageUrl(m),
       }));
+      const savedPraises = msgs
+        .filter((message) => message.role === 'ai')
+        .map(extractStoredPraise)
+        .filter((praise): praise is string => Boolean(praise));
       dispatch({
         type: 'RESTORE_MESSAGES',
         messages: chatMessages,
         turnNumber: story.turn_count,
         isEnding: story.status === 'completed',
+        fairyPraise: savedPraises[savedPraises.length - 1],
       });
       setStoryTitleState(story.title || '');
 
@@ -97,6 +113,7 @@ export default function StoryPlayPage() {
   const [childEnding, setChildEnding] = useState('');
   const [storyTitle, setStoryTitleState] = useState('');
   const [showPinyin, setShowPinyin] = useState(false);
+  const [fontSize, setFontSize] = useState<'s' | 'm' | 'l'>('m');
 
   async function handleAIEnding() {
     if (!id) return;
@@ -146,6 +163,11 @@ export default function StoryPlayPage() {
         >
           拼
         </button>
+        <div className="fontsize-toggle">
+          <button className={`fs-btn ${fontSize === 's' ? 'fs-active' : ''}`} onClick={() => setFontSize('s')}>小字</button>
+          <button className={`fs-btn ${fontSize === 'm' ? 'fs-active' : ''}`} onClick={() => setFontSize('m')}>标准</button>
+          <button className={`fs-btn ${fontSize === 'l' ? 'fs-active' : ''}`} onClick={() => setFontSize('l')}>大字</button>
+        </div>
       </div>
 
       {/* Safety notice banner */}
@@ -177,6 +199,7 @@ export default function StoryPlayPage() {
             imageUrl={msg.imageUrl}
             isEnding={msg.isEnding}
             showPinyin={showPinyin}
+            fontSize={fontSize}
           />
         ))}
 
@@ -184,6 +207,11 @@ export default function StoryPlayPage() {
 
         <div ref={chatEndRef} />
       </div>
+
+      <StoryFairyFloating
+        praise={state.fairyPraise}
+        isListening={state.isStreaming}
+      />
 
       {/* Input area */}
       <div className="story-play-bottom">

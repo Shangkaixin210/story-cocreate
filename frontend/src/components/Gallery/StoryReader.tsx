@@ -26,6 +26,7 @@ export default function StoryReader({ storyId }: StoryReaderProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showPinyin, setShowPinyin] = useState(false);
+  const [fontSize, setFontSize] = useState<'s' | 'm' | 'l'>('m');
 
   useEffect(() => {
     setLoading(true);
@@ -41,17 +42,16 @@ export default function StoryReader({ storyId }: StoryReaderProps) {
   const displayedImages = new Set<string>();
 
   return (
-    <div className={`story-reader ${showPinyin ? 'story-reader-pinyin' : ''}`}>
+    <div className={`story-reader ${showPinyin ? 'story-reader-pinyin' : ''} reader-fs-${fontSize}`}>
       <div className="reader-toolbar">
-        <span className="reader-toolbar-label">阅读模式</span>
-        <button
-          type="button"
-          className={`reader-pinyin-toggle ${showPinyin ? 'active' : ''}`}
-          onClick={() => setShowPinyin((current) => !current)}
-          aria-pressed={showPinyin}
-        >
-          {showPinyin ? '关闭拼音' : '显示拼音'}
-        </button>
+        <span className="reader-toolbar-label">字号</span>
+        <div className="fontsize-toggle">
+          <button className={`fs-btn ${fontSize==='s'?'fs-active':''}`} onClick={()=>setFontSize('s')}>小</button>
+          <button className={`fs-btn ${fontSize==='m'?'fs-active':''}`} onClick={()=>setFontSize('m')}>中</button>
+          <button className={`fs-btn ${fontSize==='l'?'fs-active':''}`} onClick={()=>setFontSize('l')}>大</button>
+        </div>
+        <span className="reader-toolbar-label">拼音</span>
+        <button type="button" className={`reader-pinyin-toggle ${showPinyin?'active':''}`} onClick={()=>setShowPinyin(c=>!c)} aria-pressed={showPinyin}>{showPinyin?'关闭':'开启'}</button>
       </div>
 
       <div className="reader-message-list">

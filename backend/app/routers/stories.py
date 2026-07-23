@@ -191,6 +191,12 @@ async def story_turn(
 
     # 2. Build message history
     messages = await story_service.get_story_messages(db, story_id)
+    # Frozen context for the evaluator. It may inspect continuity, but only the
+    # separately supplied child_input is allowed to contribute score evidence.
+    evaluation_context = "\n".join(
+        f"{'孩子' if item.get('role') == 'user' else '故事导演'}：{item.get('content', '')}"
+        for item in messages[-12:]
+    )
     # 3. Content safety & engagement checks (before LLM call)
     from app.services.content_guard import check_content, check_engagement
     safety_result = None
@@ -217,6 +223,7 @@ async def story_turn(
         narrative_parts = []
         question_text = ""
         observation_data = None
+        praise_text = ""
         ai_ending = False
         image_urls: list[str] = []  # Collect for storage
 
@@ -225,6 +232,17 @@ async def story_turn(
             yield f"event: safety_notice\ndata: {json.dumps({'message': safety_result.kind_message, 'level': safety_result.level}, ensure_ascii=False)}\n\n"
 
         try:
+            # Story Fairy responds to the child's contribution independently
+            # from the director and never runs for kickoff/system ending turns.
+            if child_msg and req.child_input.strip():
+                praise_text = await llm.generate_praise(
+                    req.child_input,
+                    evaluation_context,
+                    current_user.age_group or "8-12",
+                )
+                if praise_text:
+                    yield f"event: praise\ndata: {json.dumps({'text': praise_text, 'agent': '故事精灵'}, ensure_ascii=False)}\n\n"
+
             async for chunk in llm.generate_turn(
                 messages,
                 character_name=char.nickname if char else "",
@@ -291,6 +309,7 @@ async def story_turn(
                             "narrative": narrative,
                             "question": question_text,
                             "observation": observation_data,
+                            "praise": praise_text,
                             "image_urls": image_urls,
                         }, ensure_ascii=False),
                     )
@@ -299,10 +318,17 @@ async def story_turn(
                     if child_msg and req.child_input and req.child_input.strip():
                         age = current_user.age_group or "8-12"
                         try:
-                            observation_data = await llm.evaluate_turn(req.child_input, age)
+                            observation_data = await llm.evaluate_turn(
+                                req.child_input, age, evaluation_context
+                            )
                         except Exception:
-                            from app.services.llm_service import compute_observation
-                            observation_data = compute_observation(req.child_input, age)
+                            from app.services.llm_service import (
+                                compute_observation,
+                                upgrade_observation,
+                            )
+                            observation_data = upgrade_observation(
+                                compute_observation(req.child_input, age)
+                            )
 
                     if observation_data and child_msg:
                         await observation_service.save_observation(

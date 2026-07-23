@@ -8,21 +8,75 @@
 
 .bg-star {
   position: absolute;
-  font-size: 24px;
-  opacity: 0.3;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  opacity: 0.34;
+  filter: saturate(0.8);
 }
 
 .bg-star-1 { top: 10%; left: 5%; animation: float 4s ease-in-out infinite; }
-.bg-star-2 { top: 15%; right: 8%; animation: float 3.5s ease-in-out 0.5s infinite; }
-.bg-star-3 { top: 60%; left: 3%; animation: float 5s ease-in-out 1s infinite; }
-.bg-star-4 { top: 70%; right: 5%; animation: float 4.5s ease-in-out 1.5s infinite; }
-.bg-star-5 { bottom: 15%; left: 50%; animation: float 6s ease-in-out 0.8s infinite; }
+.bg-star-2 { width: 28px; height: 28px; top: 17%; right: 8%; animation: float 3.5s ease-in-out 0.5s infinite; }
+.bg-star-3 { width: 34px; height: 34px; top: 61%; left: 3%; animation: float 5s ease-in-out 1s infinite; }
+.bg-star-4 { width: 30px; height: 30px; top: 72%; right: 5%; animation: float 4.5s ease-in-out 1.5s infinite; }
+
+.bg-book {
+  position: absolute;
+  right: 4%;
+  bottom: 5%;
+  width: clamp(210px, 22vw, 340px);
+  opacity: 0.2;
+  transform: rotate(-8deg);
+  filter: saturate(0.72) sepia(0.12);
+}
 
 .bg-cloud {
   position: absolute;
-  font-size: 40px;
-  opacity: 0.15;
+  width: 110px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.46);
+  opacity: 0.4;
+  filter: blur(1px);
 }
 
+.bg-cloud::before,
+.bg-cloud::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  border-radius: 50%;
+  background: inherit;
+}
+.bg-cloud::before { left: 18px; width: 48px; height: 48px; }
+.bg-cloud::after { right: 14px; width: 56px; height: 56px; }
 .bg-cloud-1 { top: 5%; left: 40%; animation: float 8s ease-in-out infinite; }
 .bg-cloud-2 { bottom: 10%; right: 20%; animation: float 7s ease-in-out 2s infinite; }
+
+.asset-credit {
+  position: fixed;
+  left: 10px;
+  bottom: 7px;
+  z-index: 8;
+  color: var(--color-text-light);
+  font-size: 10px;
+  opacity: 0.48;
+  transition: opacity var(--transition-fast);
+}
+
+.asset-credit:hover,
+.asset-credit:focus-visible { opacity: 0.9; }
+
+@media (max-width: 600px) {
+  .bg-star-3,
+  .bg-star-4,
+  .bg-cloud-2 { display: none; }
+  .bg-star { opacity: 0.2; }
+  .bg-book {
+    right: -58px;
+    bottom: 8%;
+    width: 190px;
+    opacity: 0.12;
+  }
+  .asset-credit { max-width: 150px; font-size: 8px; }
+}
